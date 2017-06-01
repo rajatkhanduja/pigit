@@ -1,0 +1,1 @@
+from .serializer_deserializer_test import DefaultSerializerTest

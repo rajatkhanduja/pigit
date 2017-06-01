@@ -9,12 +9,8 @@ class GitObject(metaclass=ABCMeta):
         self.type = object_type
         self.is_loaded = is_fully_loaded
 
-    def dictonary_for_representation(self):
-        return {
-            'id': self.id,
-            'type': self.type,
-            'is_loaded': self.is_loaded
-        }
-
     def __repr__(self):
-        return repr(self.dictonary_for_representation())
+        return repr(self.__dict__)
+
+    def __eq__(self, other: 'GitObject'):
+        return type(other) == type(self) and other.__dict__ == self.__dict__

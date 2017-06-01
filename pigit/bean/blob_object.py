@@ -10,8 +10,3 @@ class BlobObject(GitObject):
 
     def __str__(self):
         return self.content
-
-    def dictonary_for_representation(self):
-        data = super(BlobObject, self).dictonary_for_representation()
-        data['content'] = self.content
-        return data

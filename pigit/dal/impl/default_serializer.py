@@ -40,11 +40,11 @@ class DefaultSerializer(object):
         template_str += "author {author} <{author_email}> {author_timestamp}\n" \
                         + "committer {committer} <{committer_email}> {commit_timestamp}\n\n" \
                         + "{commit_message}\n"
-        return template_str.format(commit_message=commit_object.commit_message, author=commit_object.author,
-                                   author_email=commit_object.author_email,
-                                   author_timestamp=commit_object.author_timestamp,
-                                   committer=commit_object.committer, committer_email=commit_object.committer_email,
-                                   commit_timestamp=commit_object.commit_timestamp)
+        return template_str.format(commit_message=commit_object.commit_message, author=commit_object.author.name,
+                                   author_email=commit_object.author.email,
+                                   author_timestamp=commit_object.author.timestamp.strftime("%s %z"),
+                                   committer=commit_object.committer.name, committer_email=commit_object.committer.email,
+                                   commit_timestamp=commit_object.committer.timestamp.strftime("%s %z"))
 
     def __commit_object_deserialize(self, object_id: str, content: str) -> GitObject:
         lines = content.split('\n')[:-1]
@@ -102,19 +102,24 @@ class DefaultSerializer(object):
 
     def serialize(self, obj: GitObject) -> bytes:
         serialized_str = None
+        obj_type = None
 
         if obj.type == GitObjectType.COMMIT:
             serialized_str = self.__commit_object_serialize(obj)
+            obj_type = "commit"
         elif obj.type == GitObjectType.BLOB:
             serialized_str = self.__blob_object_serialize(obj)
+            obj_type = "blob"
         elif obj.type == GitObjectType.TREE:
             serialized_str = self.__tree_object_serialize(obj)
+            obj_type = "tree"
 
-        serialized_str = "commit " + str(len(serialized_str)) + "\x00" + serialized_str
+        serialized_str = obj_type + " " + str(len(serialized_str)) + "\x00" + serialized_str
         return zlib.compress(serialized_str.encode('utf-8'))
 
     def deserialize(self, object_id, serialized_bytes: bytes) -> GitObject:
         decompressed_bytes = zlib.decompress(serialized_bytes)
+        print(decompressed_bytes)
         header, content = get_header_content(decompressed_bytes)
         object_type, length = infer_type_and_length(header)
 

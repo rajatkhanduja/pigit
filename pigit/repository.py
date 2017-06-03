@@ -25,7 +25,7 @@ class Repository:
         if not new_branch:
             commit_id = self.reference_store.get_reference(branch)
             commit = self.object_store.get_commit(commit_id)
-            tree = self.object_store.get_snapshot(commit.tree_reference)
+            tree = self.object_store.get_snapshot(commit.tree)
             self.working_area.setup(tree)
         else:
             self.reference_store.create_reference(branch, self.get_head())

@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from ..bean import GitObject, CommitObject
+from ..bean import GitObject, Commit
 
 
 class ObjectStore(metaclass=ABCMeta):
@@ -13,7 +13,7 @@ class ObjectStore(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_commit(self, commit_id) -> CommitObject:
+    def get_commit(self, commit_id) -> Commit:
         pass
 
     @abstractmethod

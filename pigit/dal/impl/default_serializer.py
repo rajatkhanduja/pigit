@@ -1,7 +1,8 @@
 import zlib
 import re
+from datetime import timezone, timedelta
 
-from pigit.bean import GitObject, CommitObject, TreeObject, BlobObject
+from pigit.bean import GitObject, Commit, Tree, Blob, Signature
 from pigit.bean.enum import GitObjectType
 
 
@@ -32,33 +33,51 @@ class DefaultSerializer(object):
     def __init__(self):
         pass
 
-    def __commit_object_serialize(self, commit_object: CommitObject):
-        template_str = "tree {tree_ref}\n".format(tree_ref=commit_object.tree_reference)
-        if commit_object.parent_id is not None:
-            template_str += "parent {parent_id}\n".format(parent_id=commit_object.parent_id)
+    def __serialize_timestamp(self, signature: Signature):
+        offset_minutes = signature.offset_minutes
+
+        offset = "{sign}{hour:02d}{minute:02d}".format(sign='+' if offset_minutes > 0 else '-',
+                                                       hour=int(offset_minutes / 60),
+                                                       minute=offset_minutes % 60)
+        return str(signature.timestamp) + " " + offset
+
+    def __commit_object_serialize(self, commit: Commit) -> str:
+        template_str = "tree {tree_ref}\n".format(tree_ref=commit.tree.id)
+
+        if commit.parents is not None:
+            for parent in commit.parents:
+                template_str += "parent {parent_id}\n".format(parent_id=parent.id)
 
         template_str += "author {author} <{author_email}> {author_timestamp}\n" \
                         + "committer {committer} <{committer_email}> {commit_timestamp}\n\n" \
                         + "{commit_message}\n"
-        return template_str.format(commit_message=commit_object.commit_message, author=commit_object.author.name,
-                                   author_email=commit_object.author.email,
-                                   author_timestamp=commit_object.author.timestamp.strftime("%s %z"),
-                                   committer=commit_object.committer.name, committer_email=commit_object.committer.email,
-                                   commit_timestamp=commit_object.committer.timestamp.strftime("%s %z"))
+        author_timestamp_str = self.__serialize_timestamp(commit.author)
+        committer_timestamp_str = self.__serialize_timestamp(commit.committer)
+        return template_str.format(commit_message=commit.message, author=commit.author.name,
+                                   author_email=commit.author.email,
+                                   author_timestamp=author_timestamp_str,
+                                   committer=commit.committer.name, committer_email=commit.committer.email,
+                                   commit_timestamp=committer_timestamp_str)
 
     def __commit_object_deserialize(self, object_id: str, content: str) -> GitObject:
         lines = content.split('\n')[:-1]
-        tree = lines[0][4:].strip()
 
-        def get_name_email_and_timestamp(line, type):
+        def parse_timezone(tz_str: str) -> int:
+            offset_minutes = int(tz_str[1:3]) * 60 + int(tz_str[3:])
+            if tz_str[0] == '-':
+                offset_minutes *= -1
+            return offset_minutes
+
+        def get_signature(line, type):
             match = re.search(type + " (.+) <(.+)> (.+)", line)
             if match:
                 name = match.group(1)
                 email = match.group(2)
-                timestamp = match.group(3)
-                return name, email, timestamp
+                timestamp_str = match.group(3)
+                timestamp = int(timestamp_str.split()[0])
+                tz = parse_timezone(str(timestamp_str.split()[1]))
+                return Signature(name, email, timestamp, tz)
             else:
-                print(line)
                 raise ValueError("Input not formatted as expected")
 
         def get_parent_id(line):
@@ -78,26 +97,29 @@ class DefaultSerializer(object):
                 commit_message_lines.append(line)
             return '\n'.join(reversed(commit_message_lines[:-1]))
 
-        author, author_email, author_timestamp = None, None, None
-        committer, committer_email, commit_timestamp = None, None, None
-        parent_id = None
+        tree = None
+        author = None
+        committer = None, None, None
+        parents = []
         commit_message = get_commit_message(lines)
 
-        for line in lines[1:]:
-            if line.startswith("parent"):
+        for line in lines:
+            if line.startswith("tree"):
+                tree = Tree(line[4:].strip())
+            elif line.startswith("parent"):
                 parent_id = get_parent_id(line)
+                parents.append(Commit(parent_id))
             elif line.startswith("author"):
-                author, author_email, author_timestamp = get_name_email_and_timestamp(line.strip(), "author")
+                author = get_signature(line.strip(), "author")
             elif line.startswith("committer"):
-                committer, committer_email, commit_timestamp = get_name_email_and_timestamp(line.strip(), "committer")
+                committer = get_signature(line.strip(), "committer")
 
-        return CommitObject(object_id, None, parent_id, tree, author, author_email, author_timestamp, committer,
-                            committer_email, commit_timestamp, commit_message)
+        return Commit(object_id, parents, author, committer, commit_message, tree)
 
-    def __blob_object_serialize(self, blob_object: BlobObject):
+    def __blob_object_serialize(self, blob_object: Blob):
         return blob_object.content + "\n"
 
-    def __tree_object_serialize(self, tree_object: TreeObject):
+    def __tree_object_serialize(self, tree_object: Tree):
         raise NotImplementedError
 
     def serialize(self, obj: GitObject) -> bytes:
@@ -119,7 +141,6 @@ class DefaultSerializer(object):
 
     def deserialize(self, object_id, serialized_bytes: bytes) -> GitObject:
         decompressed_bytes = zlib.decompress(serialized_bytes)
-        print(decompressed_bytes)
         header, content = get_header_content(decompressed_bytes)
         object_type, length = infer_type_and_length(header)
 
@@ -128,7 +149,7 @@ class DefaultSerializer(object):
         elif object_type == GitObjectType.COMMIT:
             return self.__commit_object_deserialize(object_id, content)
         elif object_type == GitObjectType.TREE:
-            return TreeObject(object_id, content)
+            return Tree(object_id, content)
 
     def __blob_object_deserialize(self, object_id: str, content: str):
-        return BlobObject(object_id, content[:-1])
+        return Blob(object_id, content[:-1])

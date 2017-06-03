@@ -2,7 +2,7 @@ import os
 
 from .default_serializer import DefaultSerializer
 from .. import ObjectStore
-from ...bean import GitObject, CommitObject
+from ...bean import GitObject, Commit
 from ...exception import NotGitDirException, ObjectNotFoundException
 
 
@@ -35,7 +35,7 @@ class FileSystemDataStore(ObjectStore):
     def store_object(self, object: GitObject):
         raise NotImplementedError("Not yet implemented")
 
-    def get_commit(self, commit_id) -> CommitObject:
+    def get_commit(self, commit_id) -> Commit:
         pass
 
     def get_snapshot(self, tree_reference):

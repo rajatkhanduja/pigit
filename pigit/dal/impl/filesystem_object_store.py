@@ -3,7 +3,7 @@ import glob
 
 from .default_serializer import DefaultSerializer
 from .. import ObjectStore, SerializerDeserializer
-from ...bean import GitObject, Commit
+from ...bean import GitObject
 from ...exception import NotGitDirException, InvalidObjectNameException, DuplicateObjectException
 
 OBJECT_ID_PREFIX_LEN = 2

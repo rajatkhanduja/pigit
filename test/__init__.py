@@ -1,1 +1,2 @@
-from .serializer_deserializer_test import DefaultSerializerTest
+from .serializer_deserializer_test import SerializerDeserializerTest
+from .object_store_test import FileSystemDataStoreTest

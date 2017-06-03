@@ -10,7 +10,13 @@ class NotGitDirException(PigitException):
         self.dir = dir
 
 
-class ObjectNotFoundException(PigitException):
+class InvalidObjectNameException(PigitException):
     def __init__(self, object_id):
         super().__init__(2, "No such object")
+        self.id = object_id
+
+
+class DuplicateObjectException(PigitException):
+    def __init__(self, object_id):
+        super().__init__(3, "Duplicate object")
         self.id = object_id

@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 from ..bean import GitObject
 
 
-class SerializerDeserializer(ABCMeta):
+class SerializerDeserializer(metaclass=ABCMeta):
     @abstractmethod
     def serialize(self, object: GitObject) -> bytes:
         pass

@@ -1,9 +1,10 @@
 import zlib
 import re
-from datetime import timezone, timedelta
 
 from pigit.bean import GitObject, Commit, Tree, Blob, Signature
 from pigit.bean.enum import GitObjectType
+from ..serializer_deserializer import SerializerDeserializer
+from abc import ABCMeta, abstractmethod
 
 
 def get_header_content(file_content: bytes) -> (str, str):
@@ -29,19 +30,27 @@ def infer_type_and_length(header) -> (GitObjectType, int):
     return object_type, length
 
 
-class DefaultSerializer(object):
-    def __init__(self):
+def serialize_timestamp(signature: Signature):
+    offset_minutes = signature.offset_minutes
+
+    offset = "{sign}{hour:02d}{minute:02d}".format(sign='+' if offset_minutes > 0 else '-',
+                                                   hour=int(offset_minutes / 60),
+                                                   minute=offset_minutes % 60)
+    return str(signature.timestamp) + " " + offset
+
+
+class GitObjectSerializer(metaclass=ABCMeta):
+    @abstractmethod
+    def serialize(self, obj: GitObject) -> str:
         pass
 
-    def __serialize_timestamp(self, signature: Signature):
-        offset_minutes = signature.offset_minutes
+    @abstractmethod
+    def deserialize(self, object_id, content: str) -> GitObject:
+        pass
 
-        offset = "{sign}{hour:02d}{minute:02d}".format(sign='+' if offset_minutes > 0 else '-',
-                                                       hour=int(offset_minutes / 60),
-                                                       minute=offset_minutes % 60)
-        return str(signature.timestamp) + " " + offset
 
-    def __commit_object_serialize(self, commit: Commit) -> str:
+class CommitSerializer(GitObjectSerializer):
+    def serialize(self, commit: Commit):
         template_str = "tree {tree_ref}\n".format(tree_ref=commit.tree.id)
 
         if commit.parents is not None:
@@ -51,15 +60,15 @@ class DefaultSerializer(object):
         template_str += "author {author} <{author_email}> {author_timestamp}\n" \
                         + "committer {committer} <{committer_email}> {commit_timestamp}\n\n" \
                         + "{commit_message}\n"
-        author_timestamp_str = self.__serialize_timestamp(commit.author)
-        committer_timestamp_str = self.__serialize_timestamp(commit.committer)
+        author_timestamp_str = serialize_timestamp(commit.author)
+        committer_timestamp_str = serialize_timestamp(commit.committer)
         return template_str.format(commit_message=commit.message, author=commit.author.name,
                                    author_email=commit.author.email,
                                    author_timestamp=author_timestamp_str,
                                    committer=commit.committer.name, committer_email=commit.committer.email,
                                    commit_timestamp=committer_timestamp_str)
 
-    def __commit_object_deserialize(self, object_id: str, content: str) -> GitObject:
+    def deserialize(self, object_id, content: str):
         lines = content.split('\n')[:-1]
 
         def parse_timezone(tz_str: str) -> int:
@@ -116,26 +125,35 @@ class DefaultSerializer(object):
 
         return Commit(object_id, parents, author, committer, commit_message, tree)
 
-    def __blob_object_serialize(self, blob_object: Blob):
-        return blob_object.content + "\n"
 
-    def __tree_object_serialize(self, tree_object: Tree):
+class BlobSerializer(GitObjectSerializer):
+    def serialize(self, blob: Blob):
+        return blob.content + "\n"
+
+    def deserialize(self, object_id, content: str):
+        return Blob(object_id, content[:-1])
+
+
+class TreeSerializer(GitObjectSerializer):
+    def serialize(self, tree: Tree):
         raise NotImplementedError
 
+    def deserialize(self, object_id, content: str):
+        raise NotImplementedError
+
+
+class DefaultSerializer(SerializerDeserializer):
+    def _get_serializer(self, obj_type: GitObjectType) -> GitObjectSerializer:
+        serializer_mapping = {
+            GitObjectType.COMMIT: CommitSerializer,
+            GitObjectType.TREE: TreeSerializer,
+            GitObjectType.BLOB: BlobSerializer
+        }
+        return serializer_mapping[obj_type]()
+
     def serialize(self, obj: GitObject) -> bytes:
-        serialized_str = None
-        obj_type = None
-
-        if obj.type == GitObjectType.COMMIT:
-            serialized_str = self.__commit_object_serialize(obj)
-            obj_type = "commit"
-        elif obj.type == GitObjectType.BLOB:
-            serialized_str = self.__blob_object_serialize(obj)
-            obj_type = "blob"
-        elif obj.type == GitObjectType.TREE:
-            serialized_str = self.__tree_object_serialize(obj)
-            obj_type = "tree"
-
+        obj_type = obj.type.value
+        serialized_str = self._get_serializer(obj.type).serialize(obj)
         serialized_str = obj_type + " " + str(len(serialized_str)) + "\x00" + serialized_str
         return zlib.compress(serialized_str.encode('utf-8'))
 
@@ -143,13 +161,5 @@ class DefaultSerializer(object):
         decompressed_bytes = zlib.decompress(serialized_bytes)
         header, content = get_header_content(decompressed_bytes)
         object_type, length = infer_type_and_length(header)
+        return self._get_serializer(object_type).deserialize(object_id, content)
 
-        if object_type == GitObjectType.BLOB:
-            return self.__blob_object_deserialize(object_id, content)
-        elif object_type == GitObjectType.COMMIT:
-            return self.__commit_object_deserialize(object_id, content)
-        elif object_type == GitObjectType.TREE:
-            return Tree(object_id, content)
-
-    def __blob_object_deserialize(self, object_id: str, content: str):
-        return Blob(object_id, content[:-1])

@@ -3,13 +3,15 @@ import os
 import random
 import unittest
 import logging
+import zlib
 
 from pigit.bean import Blob, Commit, Tree, Signature, TreeEntry
 from pigit.bean.enum import GitObjectType
 from pigit.dal import DefaultSerializer
 
 TEST_FILES_DIR = os.path.join(os.path.dirname(__file__), "test_files")
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
+
 
 def get_random_sha1_hash():
     return hashlib.sha1(bytes(str(random.randint(1000, 100000)), "utf-8")).hexdigest()
@@ -20,7 +22,7 @@ class SerializerDeserializerTest(unittest.TestCase):
         self.serializer = DefaultSerializer()
 
     def test_blob_serialization_deserialization(self):
-        original_blob_content = "This is a test string for serialization"
+        original_blob_content = b"This is a test string for serialization"
         object_id = "some_id"
         blob = Blob(object_id, original_blob_content)
         serialized_val = self.serializer.serialize(blob)
@@ -52,10 +54,26 @@ class SerializerDeserializerTest(unittest.TestCase):
 
     def test_blob_deserialization(self):
         blob_id = '513106b14edde064256f0a09142e41b723c9f745'
-        expected_blob = Blob(blob_id, "Python library and client for git")
+        expected_blob = Blob(blob_id, b"Python library and client for git\n")
         with open(os.path.join(TEST_FILES_DIR, "blob_" + blob_id), 'rb') as fp:
             blob = self.serializer.deserialize(blob_id, fp.read())
             self.assertEqual(blob, expected_blob, "Deserialized blob does't match expectation")
+
+    def test_blob_deserialization_for_binary_file(self):
+        blob_id = '729292c493cc1387621ea65332d1d9df5d25a4de'
+        blob_content = b'x\x01\xa5\x8eAN\xc40\x10\x049\xe7\x15s_\xb4\xb2\x93\xd8\xc9H\x08-\xe2\xc8\x01\x89\x1f' \
+                       b'\x8c\xc7\x93\x8d\xb3q\xb2\x8a\'\xf0}\x02\xe2\x07\x1c\xab\xd5\xaan^sN\n5v\x0f\xba\x89' \
+                       b'\x00\xd3 \xe2\x9c\r\xa1\xf7H\xd1\x1bf\x1fc\xeck6\x9d\x84\xe8CS\xb3\xb3\x83\xab\xee\xb4' \
+                       b'\xc9\xa2\x80\xd89F\x17\xc4bh\xcdP\xe3\x80\x14\xbc`\xec\x0c\xb7=\x05gz\xee\x1d\xc6\x8av' \
+                       b'\x1d\xd7\r>h"\x85\xb7\x91\x96\xb8O\x04O\xdb\x0f\xdf\xfe\xd06\x97k\xa64\x9fy\xcd\xcf`[' \
+                       b'\xf45\xda\xc6x8\x19\xd7\x98\xeaH\x8f\xaf*\xff\xb3T/1J\x04\x95\xa2\xe5\x11\x8a\xa6y\x86' \
+                       b'\x91>\xd3r\x85T\xca.\x05\xbe\x92\x8e\xa0)\x1f\r\xcawH\x0b\xbc\xfe.\xbf\x87IX\xcf\xd57' \
+                       b'\x19pb\x93'
+        expected_blob = Blob(blob_id, blob_content)
+        serialized_blob_file_path = os.path.join(TEST_FILES_DIR, 'blob_' + blob_id)
+        with open(serialized_blob_file_path, 'rb') as fp:
+            blob = self.serializer.deserialize(blob_id, fp.read())
+            self.assertEqual(blob, expected_blob, "Deserialized blob doesn't match for binary data")
 
     def test_tree_deserialization(self):
         tree_id = 'some_id'
@@ -76,8 +94,10 @@ class SerializerDeserializerTest(unittest.TestCase):
         expected_tree = Tree(tree_id,
                              [
                                  TreeEntry('100644', '__init__.py', '15592bb884b8e64589db28c05bfed127f3e0c234'),
-                                 TreeEntry('100644', 'object_store_test.py', '4cc33432e653d8d41596a6fe42d23702e5908bc1'),
-                                 TreeEntry('100644', 'serializer_deserializer_test.py', 'a24da47f39ca046d3395012c28ba84e384cf6a70'),
+                                 TreeEntry('100644', 'object_store_test.py',
+                                           '4cc33432e653d8d41596a6fe42d23702e5908bc1'),
+                                 TreeEntry('100644', 'serializer_deserializer_test.py',
+                                           'a24da47f39ca046d3395012c28ba84e384cf6a70'),
                                  TreeEntry('040000', 'test_files', 'b25be647c962f71963c3cf4d8e518dafc6e94905')
                              ])
         deserialized_tree = self.serializer.deserialize(tree_id, serialized_bytes)

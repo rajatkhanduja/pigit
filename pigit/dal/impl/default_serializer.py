@@ -136,11 +136,10 @@ class CommitSerializer(GitObjectSerializer):
 
 class BlobSerializer(GitObjectSerializer):
     def serialize(self, blob: Blob):
-        return blob.content + "\n"
+        return blob.content
 
     def deserialize(self, object_id, content: bytes):
-        content = content.decode()
-        return Blob(object_id, content[:-1])
+        return Blob(object_id, content)
 
 
 class TreeSerializer(GitObjectSerializer):
@@ -192,11 +191,11 @@ class DefaultSerializer(SerializerDeserializer):
     def serialize(self, obj: GitObject) -> bytes:
         obj_type = obj.type.value
         serialized_str = self._get_serializer(obj.type).serialize(obj)
-        if obj.type != GitObjectType.TREE:
+        if obj.type not in [GitObjectType.TREE, GitObjectType.BLOB]:
             serialized_str = obj_type + " " + str(len(serialized_str)) + "\x00" + serialized_str
             return zlib.compress(serialized_str.encode('utf-8'))
         else:
-            serialized_str = (obj_type + " " + str(len(serialized_str)) + "\x00").encode() + serialized_str
+            serialized_str = (obj_type + " " + str(len(serialized_str))).encode() + b"\x00" + serialized_str
             return zlib.compress(serialized_str)
 
     def deserialize(self, object_id, serialized_bytes: bytes) -> GitObject:

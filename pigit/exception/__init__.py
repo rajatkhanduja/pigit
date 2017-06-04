@@ -20,3 +20,20 @@ class DuplicateObjectException(PigitException):
     def __init__(self, object_id):
         super().__init__(3, "Duplicate object")
         self.id = object_id
+
+
+class NoSuchSpecialReferenceException(PigitException):
+    def __init__(self):
+        super().__init__(4, "No HEAD file found")
+
+
+class NoSuchReferenceException(PigitException):
+    def __init__(self, reference: str):
+        super().__init__(5, "No such reference")
+        self.reference = reference
+
+
+class NoSuchBranchException(PigitException):
+    def __init__(self, branch: str):
+        super().__init__(6, "No such branch")
+        self.branch = branch

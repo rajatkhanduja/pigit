@@ -1,16 +1,11 @@
-from .repository import Repository
+from .repository_factory import RepositoryFactory
 from .exception import *
-from .dal import FileSystemDataStore
 
 
 class PigitCommandWrapper:
-    def __init__(self, dir: str):
-        self.dir = dir
-        data_store = FileSystemDataStore(dir)
-        reference_store = None
-        working_area = None
-        configuration_provider = None
-        self.repository = Repository(data_store, reference_store, working_area, configuration_provider)
+    def __init__(self, directory: str):
+        self.dir = directory
+        self.repository = RepositoryFactory.get_repository_from_working_dir(directory)
 
     def execute_command(self, command_params):
         try:

@@ -1,17 +1,24 @@
 import zlib
 import re
+import logging
 
-from pigit.bean import GitObject, Commit, Tree, Blob, Signature
+import binascii
+
+from pigit.bean import GitObject, Commit, Tree, Blob, Signature, TreeEntry
 from pigit.bean.enum import GitObjectType
 from ..serializer_deserializer import SerializerDeserializer
 from abc import ABCMeta, abstractmethod
 
+ORD_VAL_OF_SPACE = ord(b' ')
 
-def get_header_content(file_content: bytes) -> (str, str):
-    header_bytes, content_bytes = file_content.split(b'\x00')
+LOGGER = logging.getLogger(__name__)
+
+
+def get_header_content(file_content: bytes) -> (str, bytes):
+    header_bytes, *_ = file_content.split(b'\x00')
+    content_bytes = file_content[len(header_bytes) + 1:]
     header = header_bytes.decode("utf-8")
-    content = content_bytes.decode("utf-8")
-    return header, content
+    return header, content_bytes
 
 
 def infer_type_and_length(header) -> (GitObjectType, int):
@@ -45,7 +52,7 @@ class GitObjectSerializer(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def deserialize(self, object_id, content: str) -> GitObject:
+    def deserialize(self, object_id, content: bytes) -> GitObject:
         pass
 
 
@@ -68,7 +75,8 @@ class CommitSerializer(GitObjectSerializer):
                                    committer=commit.committer.name, committer_email=commit.committer.email,
                                    commit_timestamp=committer_timestamp_str)
 
-    def deserialize(self, object_id, content: str):
+    def deserialize(self, object_id, content: bytes):
+        content = content.decode()
         lines = content.split('\n')[:-1]
 
         def parse_timezone(tz_str: str) -> int:
@@ -130,16 +138,46 @@ class BlobSerializer(GitObjectSerializer):
     def serialize(self, blob: Blob):
         return blob.content + "\n"
 
-    def deserialize(self, object_id, content: str):
+    def deserialize(self, object_id, content: bytes):
+        content = content.decode()
         return Blob(object_id, content[:-1])
 
 
 class TreeSerializer(GitObjectSerializer):
     def serialize(self, tree: Tree):
-        raise NotImplementedError
+        entries_data = b''
+        for entry in tree.entries:
+            entries_data += (entry.mode + " " + entry.filename).encode() + b'\x00'
+            entries_data += binascii.unhexlify(entry.object_id)
+        return entries_data
 
-    def deserialize(self, object_id, content: str):
-        raise NotImplementedError
+
+    def deserialize(self, object_id, content: bytes):
+        entries = []
+        cur_index = 0
+        LOGGER.debug(content)
+        while cur_index < len(content):
+            start_idx = cur_index
+            while content[cur_index] != ORD_VAL_OF_SPACE:
+                cur_index += 1
+            mode = content[start_idx:cur_index].decode()
+            # TODO: Get rid of the hack
+            if not (mode.startswith('0') or mode.startswith('1')):
+                mode = '0' + mode
+            cur_index += 1
+
+            start_idx = cur_index
+            while content[cur_index] != 0:
+                cur_index += 1
+            filename = content[start_idx:cur_index].decode()
+            cur_index += 1
+
+            start_idx = cur_index
+            entry_id = binascii.hexlify(content[start_idx:start_idx + 20]).decode()
+            cur_index = start_idx + 20
+            entries.append(TreeEntry(mode, filename, entry_id))
+
+        return Tree(object_id, entries)
 
 
 class DefaultSerializer(SerializerDeserializer):
@@ -154,12 +192,18 @@ class DefaultSerializer(SerializerDeserializer):
     def serialize(self, obj: GitObject) -> bytes:
         obj_type = obj.type.value
         serialized_str = self._get_serializer(obj.type).serialize(obj)
-        serialized_str = obj_type + " " + str(len(serialized_str)) + "\x00" + serialized_str
-        return zlib.compress(serialized_str.encode('utf-8'))
+        if obj.type != GitObjectType.TREE:
+            serialized_str = obj_type + " " + str(len(serialized_str)) + "\x00" + serialized_str
+            return zlib.compress(serialized_str.encode('utf-8'))
+        else:
+            serialized_str = (obj_type + " " + str(len(serialized_str)) + "\x00").encode() + serialized_str
+            return zlib.compress(serialized_str)
 
     def deserialize(self, object_id, serialized_bytes: bytes) -> GitObject:
+        LOGGER.debug(serialized_bytes)
         decompressed_bytes = zlib.decompress(serialized_bytes)
-        header, content = get_header_content(decompressed_bytes)
+        LOGGER.debug("Decompressed bytes : " + str(decompressed_bytes))
+        header, content_bytes = get_header_content(decompressed_bytes)
         object_type, length = infer_type_and_length(header)
-        return self._get_serializer(object_type).deserialize(object_id, content)
+        return self._get_serializer(object_type).deserialize(object_id, content_bytes)
 

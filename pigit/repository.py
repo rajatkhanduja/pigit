@@ -1,7 +1,8 @@
-from .dal import ObjectStore, ReferenceStore
-from .configuration_provider import ConfigurationProvider
-from .working_area import WorkingArea
 from .bean import GitObject
+from .bean.enum import SpecialReference
+from .configuration_provider import ConfigurationProvider
+from .dal import ObjectStore, ReferenceStore
+from .working_area import WorkingArea
 
 
 class Repository:
@@ -19,17 +20,11 @@ class Repository:
         return self.object_store.get_object(object_id)
 
     def get_head(self):
-        return self.reference_store.get_head()
+        return self.reference_store.get_special_ref(SpecialReference.HEAD)
 
-    def checkout(self, branch, new_branch=False, detach=False):
-        if not new_branch:
-            commit_id = self.reference_store.get_reference(branch)
-            commit = self.object_store.get_commit(commit_id)
-            tree = self.object_store.get_snapshot(commit.tree)
-            self.working_area.setup(tree)
-        else:
-            self.reference_store.create_reference(branch, self.get_head())
-            self.reference_store.update_current_branch()
+    def checkout(self, branch):
+        pass
+
 
     def stage_chunk(self, chunk):
         # TODO: Yet to figure out the details of this

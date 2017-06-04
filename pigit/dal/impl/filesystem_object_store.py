@@ -14,7 +14,7 @@ def get_file_contents(file: str):
         return fp.read()
 
 
-class FileSystemDataStore(ObjectStore):
+class FileSystemObjectStore(ObjectStore):
     def __init__(self, working_dir, git_sub_directory: str = '.git',
                  serializer: SerializerDeserializer=DefaultSerializer()):
         self.working_dir = working_dir

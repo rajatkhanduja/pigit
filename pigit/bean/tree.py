@@ -1,12 +1,14 @@
 from .git_object import GitObject
+from .tree_entry import TreeEntry
 from .enum import GitObjectType
 
 
 class Tree(GitObject):
-    def __init__(self, object_id: str):
+    def __init__(self, object_id: str, entries:[TreeEntry] = None):
         super().__init__(object_id, GitObjectType.TREE)
-        self.children = []
+        if entries is None:
+            entries = []
+        self.entries = entries
 
-    def add_child(self, node: GitObject):
-        self.children.append(node)
-
+    def add_entry(self, entry: TreeEntry):
+        self.entries.append(entry)

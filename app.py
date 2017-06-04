@@ -3,6 +3,10 @@
 from pigit import PigitCommandWrapper, PigitException
 import os
 import sys
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
 
 try:
     pigit = PigitCommandWrapper(os.curdir)

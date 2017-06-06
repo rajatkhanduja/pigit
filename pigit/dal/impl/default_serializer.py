@@ -37,13 +37,13 @@ def infer_type_and_length(header) -> (GitObjectType, int):
     return object_type, length
 
 
-def serialize_timestamp(signature: Signature):
+def serialize_timestamp(signature: Signature) -> bytes:
     offset_minutes = signature.offset_minutes
 
     offset = "{sign}{hour:02d}{minute:02d}".format(sign='+' if offset_minutes > 0 else '-',
                                                    hour=int(offset_minutes / 60),
                                                    minute=offset_minutes % 60)
-    return str(signature.timestamp) + " " + offset
+    return (str(signature.timestamp) + " " + offset).encode()
 
 
 class GitObjectSerializer(metaclass=ABCMeta):
@@ -57,23 +57,20 @@ class GitObjectSerializer(metaclass=ABCMeta):
 
 
 class CommitSerializer(GitObjectSerializer):
-    def serialize(self, commit: Commit):
-        template_str = "tree {tree_ref}\n".format(tree_ref=commit.tree.id)
+    def serialize(self, commit: Commit) -> bytes:
+        lines = [b"tree %s" % commit.tree.id.encode()]
 
         if commit.parents is not None:
             for parent in commit.parents:
-                template_str += "parent {parent_id}\n".format(parent_id=parent.id)
+                lines.append(b"parent %s" % parent.id.encode())
 
-        template_str += "author {author} <{author_email}> {author_timestamp}\n" \
-                        + "committer {committer} <{committer_email}> {commit_timestamp}\n\n" \
-                        + "{commit_message}\n"
-        author_timestamp_str = serialize_timestamp(commit.author)
-        committer_timestamp_str = serialize_timestamp(commit.committer)
-        return template_str.format(commit_message=commit.message, author=commit.author.name,
-                                   author_email=commit.author.email,
-                                   author_timestamp=author_timestamp_str,
-                                   committer=commit.committer.name, committer_email=commit.committer.email,
-                                   commit_timestamp=committer_timestamp_str)
+        author_timestamp = serialize_timestamp(commit.author)
+        committer_timestamp = serialize_timestamp(commit.committer)
+        lines.append(b"author %s <%s> %s" % (commit.author.name.encode(), commit.author.email.encode(), author_timestamp))
+        lines.append(b"committer %s <%s> %s" % (commit.committer.name.encode(), commit.committer.email.encode(), committer_timestamp))
+        lines.append(b"\n%s\n" % commit.message.encode())
+
+        return b'\n'.join(lines)
 
     def deserialize(self, object_id, content: bytes):
         content = content.decode()
@@ -190,13 +187,9 @@ class DefaultSerializer(SerializerDeserializer):
 
     def serialize(self, obj: GitObject) -> bytes:
         obj_type = obj.type.value
-        serialized_str = self._get_serializer(obj.type).serialize(obj)
-        if obj.type not in [GitObjectType.TREE, GitObjectType.BLOB]:
-            serialized_str = obj_type + " " + str(len(serialized_str)) + "\x00" + serialized_str
-            return zlib.compress(serialized_str.encode('utf-8'))
-        else:
-            serialized_str = (obj_type + " " + str(len(serialized_str))).encode() + b"\x00" + serialized_str
-            return zlib.compress(serialized_str)
+        serialized_bytes = self._get_serializer(obj.type).serialize(obj)
+        final_content = (obj_type + " " + str(len(serialized_bytes))).encode() + b"\x00" + serialized_bytes
+        return zlib.compress(final_content)
 
     def deserialize(self, object_id, serialized_bytes: bytes) -> GitObject:
         LOGGER.debug(serialized_bytes)

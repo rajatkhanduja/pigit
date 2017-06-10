@@ -5,3 +5,4 @@ class GitObjectType(Enum):
     TREE = 'tree'
     BLOB = 'blob'
     COMMIT = 'commit'
+    TAG = 'tag'

@@ -5,7 +5,7 @@ import unittest
 import logging
 import zlib
 
-from pigit.bean import Blob, Commit, Tree, Signature, TreeEntry
+from pigit.bean import Blob, Commit, Tree, Signature, TreeEntry, Tag
 from pigit.bean.enum import GitObjectType
 from pigit.dal import DefaultSerializer
 
@@ -114,3 +114,21 @@ class SerializerDeserializerTest(unittest.TestCase):
                         TreeEntry('040000', 'test_files', 'b25be647c962f71963c3cf4d8e518dafc6e94905')
                     ])
         self.assertEqual(self.serializer.deserialize(tree_id, self.serializer.serialize(tree)), tree)
+
+    def test_tag_deserialization(self):
+        tag_id = 'some_id'
+        serialized_bytes = b'x\x01-\xcc\xcb\n\xc20\x10\x85a\xd7y\x8a\xd9\x0b\x92in\r\x88\xe8\xda\x9d\xf8\x02\x93' \
+                           b'\x98\xc6\xc4\xd6J\x1d\x05\xdf\xdeV\xdc\x9d\x7fq>\xa6\x0ch\xfcj\x0c5E\x06g\xd0yK\x8a4j' \
+                           b'\xd5`H\xd8J\x13S\xf21\xb4A5\xb2Q\x1d\xd9\xd09\xc1\x9fG\x828\x0eCa\xc1\xb3\xc1\xe9\xc9g' \
+                           b'\xca\xcb\xcei\x82\x13Ub8^\xe9~yU\x82\xed\xb4\xf4\xed\x9f\xa8\xf6y\xa0\xd2o\xe6\xff' \
+                           b'\x0eP{k\xacv\na-\x8d\x92B\x1c\x80\xa7\xf2.\xd4\xffT\x98I\xf1\x05\xd9\x8c3\xe1 '
+        expected_tag = Tag(tag_id, 'testTag', Signature('Rajat Khanduja', 'rajatkhanduja13@gmail.com', 1496564731, 330),
+                           '751796a3a414321be1805cee9cb8b32023fa6bf7', GitObjectType.COMMIT, 'A trivial test tag\n')
+        self.assertEqual(self.serializer.deserialize(tag_id, serialized_bytes), expected_tag)
+
+    def test_tag_serialization(self):
+        tag = Tag('some_id', 'testTag', Signature('Rajat Khanduja', 'rajatkhanduja13@gmail.com', 1496564731, 330),
+                  '751796a3a414321be1805cee9cb8b32023fa6bf7', GitObjectType.COMMIT, 'A trivial test tag')
+        serialized_bytes = self.serializer.serialize(tag)
+        tag_from_bytes = self.serializer.deserialize(tag.id, serialized_bytes)
+        self.assertEqual(tag, tag_from_bytes)

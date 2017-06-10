@@ -4,7 +4,7 @@ import logging
 
 import binascii
 
-from pigit.bean import GitObject, Commit, Tree, Blob, Signature, TreeEntry
+from pigit.bean import GitObject, Commit, Tree, Blob, Signature, TreeEntry, Tag
 from pigit.bean.enum import GitObjectType
 from ..serializer_deserializer import SerializerDeserializer
 from abc import ABCMeta, abstractmethod
@@ -22,19 +22,36 @@ def get_header_content(file_content: bytes) -> (str, bytes):
 
 
 def infer_type_and_length(header) -> (GitObjectType, int):
-    object_type = None
-    length = 0
-    if header.startswith('blob'):
-        object_type = GitObjectType.BLOB
-        length = int(header[4:].strip())
-    elif header.startswith('commit'):
-        object_type = GitObjectType.COMMIT
-        length = int(header[6:].strip())
-    elif header.startswith('tree'):
-        object_type = GitObjectType.TREE
-        length = int(header[4:].strip())
+    object_type, length = header.split()
+
+    object_type = GitObjectType(object_type.strip())
+    length = int(length)
 
     return object_type, length
+
+
+def parse_timezone(tz_str: str) -> int:
+    offset_minutes = int(tz_str[1:3]) * 60 + int(tz_str[3:])
+    if tz_str[0] == '-':
+        offset_minutes *= -1
+    return offset_minutes
+
+
+def get_signature(line, type):
+    match = re.search(type + " (.+) <(.+)> (.+)", line)
+    if match:
+        name = match.group(1)
+        email = match.group(2)
+        timestamp_str = match.group(3)
+        timestamp = int(timestamp_str.split()[0])
+        tz = parse_timezone(str(timestamp_str.split()[1]))
+        return Signature(name, email, timestamp, tz)
+    else:
+        raise ValueError("Input not formatted as expected")
+
+
+def serialize_signature(signature: Signature) -> bytes:
+    return b"%s <%s> %s" % (signature.name.encode(), signature.email.encode(), serialize_timestamp(signature))
 
 
 def serialize_timestamp(signature: Signature) -> bytes:
@@ -64,10 +81,8 @@ class CommitSerializer(GitObjectSerializer):
             for parent in commit.parents:
                 lines.append(b"parent %s" % parent.id.encode())
 
-        author_timestamp = serialize_timestamp(commit.author)
-        committer_timestamp = serialize_timestamp(commit.committer)
-        lines.append(b"author %s <%s> %s" % (commit.author.name.encode(), commit.author.email.encode(), author_timestamp))
-        lines.append(b"committer %s <%s> %s" % (commit.committer.name.encode(), commit.committer.email.encode(), committer_timestamp))
+        lines.append(b"author " + serialize_signature(commit.author))
+        lines.append(b"committer " + serialize_signature(commit.committer))
         lines.append(b"\n%s\n" % commit.message.encode())
 
         return b'\n'.join(lines)
@@ -75,24 +90,6 @@ class CommitSerializer(GitObjectSerializer):
     def deserialize(self, object_id, content: bytes):
         content = content.decode()
         lines = content.split('\n')[:-1]
-
-        def parse_timezone(tz_str: str) -> int:
-            offset_minutes = int(tz_str[1:3]) * 60 + int(tz_str[3:])
-            if tz_str[0] == '-':
-                offset_minutes *= -1
-            return offset_minutes
-
-        def get_signature(line, type):
-            match = re.search(type + " (.+) <(.+)> (.+)", line)
-            if match:
-                name = match.group(1)
-                email = match.group(2)
-                timestamp_str = match.group(3)
-                timestamp = int(timestamp_str.split()[0])
-                tz = parse_timezone(str(timestamp_str.split()[1]))
-                return Signature(name, email, timestamp, tz)
-            else:
-                raise ValueError("Input not formatted as expected")
 
         def get_parent_id(line):
             match = re.search("parent (.+)", line)
@@ -147,7 +144,6 @@ class TreeSerializer(GitObjectSerializer):
             entries_data += binascii.unhexlify(entry.object_id)
         return entries_data
 
-
     def deserialize(self, object_id, content: bytes):
         entries = []
         cur_index = 0
@@ -176,12 +172,55 @@ class TreeSerializer(GitObjectSerializer):
         return Tree(object_id, entries)
 
 
+class TagSerializer(GitObjectSerializer):
+    def serialize(self, tag: Tag) -> bytes:
+        lines = [
+            b'object ' + tag.target.encode(),
+            b'type ' + tag.target_type.value.encode(),
+            b'tag ' + tag.name.encode(),
+            b'tagger ' + serialize_signature(tag.tagger)
+        ]
+        return b'\n'.join(lines) + b'\n\n' + tag.message.encode()
+
+    def deserialize(self, object_id, content: bytes) -> GitObject:
+        content = content.decode()
+        lines = content.split('\n')
+
+        def get_tag_message(lines):
+            tag_message_lines = []
+            for line in reversed(lines):
+                if line.startswith("tagger"):
+                    break
+                tag_message_lines.append(line)
+            return '\n'.join(reversed(tag_message_lines[:-1]))
+
+        tagger = None
+        target = None
+        target_type = None
+        tag_name = None
+        message = get_tag_message(lines)
+        for line in lines:
+            if line.startswith('tagger'):
+                tagger = get_signature(line, 'tagger')
+            elif line.startswith('object'):
+                target = line[len('objects'):].strip()
+            elif line.startswith('type'):
+                target_type = GitObjectType(line[len('type'):].strip())
+            elif line.startswith('tag'):
+                tag_name = line[3:].strip()
+            else:
+                break
+
+        return Tag(object_id, tag_name, tagger, target, target_type, message)
+
+
 class DefaultSerializer(SerializerDeserializer):
     def _get_serializer(self, obj_type: GitObjectType) -> GitObjectSerializer:
         serializer_mapping = {
             GitObjectType.COMMIT: CommitSerializer,
             GitObjectType.TREE: TreeSerializer,
-            GitObjectType.BLOB: BlobSerializer
+            GitObjectType.BLOB: BlobSerializer,
+            GitObjectType.TAG: TagSerializer
         }
         return serializer_mapping[obj_type]()
 
@@ -198,4 +237,3 @@ class DefaultSerializer(SerializerDeserializer):
         header, content_bytes = get_header_content(decompressed_bytes)
         object_type, length = infer_type_and_length(header)
         return self._get_serializer(object_type).deserialize(object_id, content_bytes)
-

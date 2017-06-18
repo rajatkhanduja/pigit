@@ -1,4 +1,3 @@
-import zlib
 import re
 import logging
 
@@ -228,12 +227,11 @@ class DefaultSerializer(SerializerDeserializer):
         obj_type = obj.type.value
         serialized_bytes = self._get_serializer(obj.type).serialize(obj)
         final_content = (obj_type + " " + str(len(serialized_bytes))).encode() + b"\x00" + serialized_bytes
-        return zlib.compress(final_content)
+        return final_content
 
     def deserialize(self, object_id, serialized_bytes: bytes) -> GitObject:
         LOGGER.debug(serialized_bytes)
-        decompressed_bytes = zlib.decompress(serialized_bytes)
-        LOGGER.debug("Decompressed bytes : " + str(decompressed_bytes))
-        header, content_bytes = get_header_content(decompressed_bytes)
+        LOGGER.debug("Decompressed bytes : " + str(serialized_bytes))
+        header, content_bytes = get_header_content(serialized_bytes)
         object_type, length = infer_type_and_length(header)
         return self._get_serializer(object_type).deserialize(object_id, content_bytes)

@@ -1,5 +1,6 @@
+import zlib
+
 from pathlib import Path
-from .default_serializer import DefaultSerializer
 from .. import ObjectStore, SerializerDeserializer
 from ...bean import GitObject
 from ...exception import NotGitDirException, InvalidObjectNameException, DuplicateObjectException
@@ -13,8 +14,7 @@ def get_file_contents(file: Path):
 
 
 class FileSystemObjectStore(ObjectStore):
-    def __init__(self, working_dir, git_sub_directory: str = '.git',
-                 serializer: SerializerDeserializer = DefaultSerializer()):
+    def __init__(self, working_dir, serializer: SerializerDeserializer, git_sub_directory: str = '.git'):
         self.working_dir = Path(working_dir)  # type: Path
         self.git_dir = self.working_dir / git_sub_directory  # type: Path
         self.serializer = serializer  # type: SerializerDeserializer
@@ -50,8 +50,8 @@ class FileSystemObjectStore(ObjectStore):
         if not object_file.is_file():
             raise InvalidObjectNameException(object_id)
         file_content = get_file_contents(object_file)
-
-        git_object = self.serializer.deserialize(object_id, file_content)
+        decomressed_content = zlib.decompress(file_content)
+        git_object = self.serializer.deserialize(object_id, decomressed_content)
 
         if not lazy_load:
             # TODO: Handle recursive loading
@@ -63,7 +63,8 @@ class FileSystemObjectStore(ObjectStore):
         if object_file_path.is_file():
             raise DuplicateObjectException(object.id)
         with object_file_path.open('wb') as fp:
-            fp.write(self.serializer.serialize(object))
+            serilized_bytes = self.serializer.serialize(object)
+            fp.write(zlib.compress(serilized_bytes))
 
     def delete_object(self, object_id):
         self._get_obj_file_path(object_id).unlink()

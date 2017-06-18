@@ -49,14 +49,14 @@ class SerializerDeserializerTest(unittest.TestCase):
                                  Tree('cafee551bb869ad60cc6ddd82c07ebd6b32c51f5'))
 
         with open(os.path.join(TEST_FILES_DIR, "commit_" + commit_id), 'rb') as fp:
-            commit = self.serializer.deserialize(commit_id, fp.read())
+            commit = self.serializer.deserialize(commit_id, zlib.decompress(fp.read()))
             self.assertEqual(commit, expected_commit, "Deserialized commit doesn't match expectation")
 
     def test_blob_deserialization(self):
         blob_id = '513106b14edde064256f0a09142e41b723c9f745'
         expected_blob = Blob(blob_id, b"Python library and client for git\n")
         with open(os.path.join(TEST_FILES_DIR, "blob_" + blob_id), 'rb') as fp:
-            blob = self.serializer.deserialize(blob_id, fp.read())
+            blob = self.serializer.deserialize(blob_id, zlib.decompress(fp.read()))
             self.assertEqual(blob, expected_blob, "Deserialized blob does't match expectation")
 
     def test_blob_deserialization_for_binary_file(self):
@@ -72,25 +72,17 @@ class SerializerDeserializerTest(unittest.TestCase):
         expected_blob = Blob(blob_id, blob_content)
         serialized_blob_file_path = os.path.join(TEST_FILES_DIR, 'blob_' + blob_id)
         with open(serialized_blob_file_path, 'rb') as fp:
-            blob = self.serializer.deserialize(blob_id, fp.read())
+            blob = self.serializer.deserialize(blob_id, zlib.decompress(fp.read()))
             self.assertEqual(blob, expected_blob, "Deserialized blob doesn't match for binary data")
 
     def test_tree_deserialization(self):
         tree_id = 'some_id'
-        # serialized_bytes = b"tree 183\x00100644 __init__.py\x00\x15Y+\xb8\x84\xb8\xe6E\x89\xdb(\xc0[" \
-        #                    b"\xfe\xd1'\xf3\xe0\xc24100644 " \
-        #                    b"object_store_test.py\x00L\xc342\xe6S\xd8\xd4\x15\x96\xa6\xfeB\xd27\x02\xe5\x90\x8b" \
-        #                    b"\xc1100644 serializer_deserializer_test.py\x00\xa2M\xa4\x7f9\xca\x04m3\x95\x01," \
-        #                    b"(\xba\x84\xe3\x84\xcfjp40000 test_files\x00\xb2[" \
-        #                    b"\xe6G\xc9b\xf7\x19c\xc3\xcfM\x8eQ\x8d\xaf\xc6\xe9I\x05 "
-        serialized_bytes = b'x\x01+)JMU0\xb40f040031Q\x88\x8f\xcf\xcc\xcb,' \
-                           b'\x89\x8f\xd7+\xa8d\x10\x8d\xd4\xde\xd1\xb2\xe3\x99k\xe7m\x8d\x03\xd1\xff.\xaa\x7f~p\xc8' \
-                           b'\x04\xaa,?)+5\xb9$\xbe\xb8$\xbf(' \
-                           b'5\xbe$\xb5\xb8\x04\xa4\xde\xe7\xb0\x89\xd1\xb3\xe0\x1bWD\xa7-\xfb\xe7t\xc9\x9c\xe9\xe9' \
-                           b'\x84\xee\x83P\xf5\xc5\xa9E\x99\x899\x99U\xa9E\xf1)\xa9H\x1c\x98\xd6E\xbeK\xea-O\xb1\xe4' \
-                           b'\x1aOe\xd4\xd1\xd8\xd5\xf2\xb8\xe5|V\x81\x89\x01\x10(' \
-                           b'\x80T\xc4\xa7e\xe6\xa4\x163l\x8a~\xe6~2\xe9\xbbd\xf2\xe1\xf3\xbe}\x81\xbd\xeb\x8f\xbd' \
-                           b'\xf4d\x05\x00`\xc4N\x87 '
+        serialized_bytes = b"tree 183\x00100644 __init__.py\x00\x15Y+\xb8\x84\xb8\xe6E\x89\xdb(\xc0[" \
+                           b"\xfe\xd1'\xf3\xe0\xc24100644 " \
+                           b"object_store_test.py\x00L\xc342\xe6S\xd8\xd4\x15\x96\xa6\xfeB\xd27\x02\xe5\x90\x8b" \
+                           b"\xc1100644 serializer_deserializer_test.py\x00\xa2M\xa4\x7f9\xca\x04m3\x95\x01," \
+                           b"(\xba\x84\xe3\x84\xcfjp40000 test_files\x00\xb2[" \
+                           b"\xe6G\xc9b\xf7\x19c\xc3\xcfM\x8eQ\x8d\xaf\xc6\xe9I\x05"
         expected_tree = Tree(tree_id,
                              [
                                  TreeEntry('100644', '__init__.py', '15592bb884b8e64589db28c05bfed127f3e0c234'),
@@ -117,11 +109,9 @@ class SerializerDeserializerTest(unittest.TestCase):
 
     def test_tag_deserialization(self):
         tag_id = 'some_id'
-        serialized_bytes = b'x\x01-\xcc\xcb\n\xc20\x10\x85a\xd7y\x8a\xd9\x0b\x92in\r\x88\xe8\xda\x9d\xf8\x02\x93' \
-                           b'\x98\xc6\xc4\xd6J\x1d\x05\xdf\xdeV\xdc\x9d\x7fq>\xa6\x0ch\xfcj\x0c5E\x06g\xd0yK\x8a4j' \
-                           b'\xd5`H\xd8J\x13S\xf21\xb4A5\xb2Q\x1d\xd9\xd09\xc1\x9fG\x828\x0eCa\xc1\xb3\xc1\xe9\xc9g' \
-                           b'\xca\xcb\xcei\x82\x13Ub8^\xe9~yU\x82\xed\xb4\xf4\xed\x9f\xa8\xf6y\xa0\xd2o\xe6\xff' \
-                           b'\x0eP{k\xacv\na-\x8d\x92B\x1c\x80\xa7\xf2.\xd4\xffT\x98I\xf1\x05\xd9\x8c3\xe1 '
+        serialized_bytes = b'tag 159\x00object 751796a3a414321be1805cee9cb8b32023fa6bf7\ntype commit\ntag ' \
+                           b'testTag\ntagger Rajat Khanduja <rajatkhanduja13@gmail.com> 1496564731 +0530\n\nA trivial' \
+                           b' test tag\n'
         expected_tag = Tag(tag_id, 'testTag', Signature('Rajat Khanduja', 'rajatkhanduja13@gmail.com', 1496564731, 330),
                            '751796a3a414321be1805cee9cb8b32023fa6bf7', GitObjectType.COMMIT, 'A trivial test tag\n')
         self.assertEqual(self.serializer.deserialize(tag_id, serialized_bytes), expected_tag)

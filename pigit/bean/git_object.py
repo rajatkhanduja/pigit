@@ -1,12 +1,13 @@
+from typing import Union
+
 from abc import ABCMeta
 from .enum import GitObjectType
 
 
 class GitObject(metaclass=ABCMeta):
-    def __init__(self, object_id: str, object_type: GitObjectType, is_fully_loaded=False):
+    def __init__(self, object_id: Union[str, None], object_type: GitObjectType, is_fully_loaded=False):
         super().__init__()
-        if object_id is None:
-            raise ValueError("'id' cannot be None")
+
         if object_type is None:
             raise ValueError("'type' cannot be None")
         self.id = object_id

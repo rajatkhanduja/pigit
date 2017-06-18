@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 from pigit.bean import GitObject
 
 
-class SerializerDeserializer(metaclass=ABCMeta):
+class Serializer(metaclass=ABCMeta):
     @abstractmethod
     def serialize(self, object: GitObject) -> bytes:
         pass

@@ -7,7 +7,7 @@ import zlib
 
 from pigit.bean import Blob, Commit, Tree, Signature, TreeEntry, Tag
 from pigit.bean.enum import GitObjectType
-from pigit.dal import DefaultSerializer
+from pigit.serializer import DefaultSerializer
 
 TEST_FILES_DIR = os.path.join(os.path.dirname(__file__), "test_files")
 logging.basicConfig(level=logging.INFO)
@@ -17,7 +17,7 @@ def get_random_sha1_hash():
     return hashlib.sha1(bytes(str(random.randint(1000, 100000)), "utf-8")).hexdigest()
 
 
-class SerializerDeserializerTest(unittest.TestCase):
+class SerializerTest(unittest.TestCase):
     def setUp(self):
         self.serializer = DefaultSerializer()
 

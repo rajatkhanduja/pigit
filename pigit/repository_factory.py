@@ -1,4 +1,5 @@
-from pigit.dal import FileSystemReferenceStore, FileSystemObjectStore, DefaultSerializer
+from pigit.dal import FileSystemReferenceStore, FileSystemObjectStore
+from pigit.serializer import DefaultSerializer
 from pigit.id_generator import SerializerBasedIdGenerator
 from pigit.repository import Repository
 from hashlib import sha1

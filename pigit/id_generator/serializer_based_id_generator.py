@@ -1,10 +1,10 @@
-from pigit.id_generator.id_generator import IdGenerator
-from pigit.dal.serializer_deserializer import SerializerDeserializer
 from pigit.bean import GitObject
+from pigit.id_generator.id_generator import IdGenerator
+from pigit.serializer.serializer import Serializer
 
 
 class SerializerBasedIdGenerator(IdGenerator):
-    def __init__(self, serializer: SerializerDeserializer, hasher):
+    def __init__(self, serializer: Serializer, hasher):
         self.serializer = serializer
         self.hasher = hasher
 

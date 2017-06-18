@@ -1,7 +1,8 @@
 import zlib
 
 from pathlib import Path
-from pigit.dal import ObjectStore, SerializerDeserializer
+from pigit.dal import ObjectStore
+from pigit.serializer import Serializer
 from pigit.bean import GitObject
 from pigit.exception import NotGitDirException, InvalidObjectNameException, DuplicateObjectException
 
@@ -14,10 +15,10 @@ def get_file_contents(file: Path):
 
 
 class FileSystemObjectStore(ObjectStore):
-    def __init__(self, working_dir, serializer: SerializerDeserializer, git_sub_directory: str = '.git'):
+    def __init__(self, working_dir, serializer: Serializer, git_sub_directory: str = '.git'):
         self.working_dir = Path(working_dir)  # type: Path
         self.git_dir = self.working_dir / git_sub_directory  # type: Path
-        self.serializer = serializer  # type: SerializerDeserializer
+        self.serializer = serializer  # type: Serializer
         if not self.git_dir.is_dir():
             raise NotGitDirException(working_dir)
         self.objects_dir = self.git_dir / 'objects'

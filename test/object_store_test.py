@@ -3,11 +3,11 @@ from unittest import TestCase
 
 from pigit.dal.impl import FileSystemObjectStore
 from pigit.bean import *
-from pigit.dal import SerializerDeserializer
+from pigit.serializer import Serializer
 from pigit.exception import InvalidObjectNameException, DuplicateObjectException
 
 
-class DummySerializer(SerializerDeserializer):
+class DummySerializer(Serializer):
     def serialize(self, object: GitObject):
         return bytes("some_serialized_val", "utf-8")
 

@@ -1,12 +1,11 @@
-import re
-import logging
-
 import binascii
+import logging
+import re
+from abc import ABCMeta, abstractmethod
 
 from pigit.bean import GitObject, Commit, Tree, Blob, Signature, TreeEntry, Tag
 from pigit.bean.enum import GitObjectType
-from pigit.dal.serializer_deserializer import SerializerDeserializer
-from abc import ABCMeta, abstractmethod
+from pigit.serializer.serializer import Serializer
 
 ORD_VAL_OF_SPACE = ord(b' ')
 
@@ -213,7 +212,7 @@ class TagSerializer(GitObjectSerializer):
         return Tag(object_id, tag_name, tagger, target, target_type, message)
 
 
-class DefaultSerializer(SerializerDeserializer):
+class DefaultSerializer(Serializer):
     def _get_serializer(self, obj_type: GitObjectType) -> GitObjectSerializer:
         serializer_mapping = {
             GitObjectType.COMMIT: CommitSerializer,

@@ -1,3 +1,2 @@
-from .default_serializer import DefaultSerializer
 from .filesystem_object_store import FileSystemObjectStore
 from .filesystem_reference_store import FileSystemReferenceStore

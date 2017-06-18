@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
-from ..bean import Reference
-from ..bean.enum import SpecialReference
+from pigit.bean import Reference
+from pigit.bean.enum import SpecialReference
 
 
 class ReferenceStore(metaclass=ABCMeta):

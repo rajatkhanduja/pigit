@@ -1,6 +1,6 @@
-from ..serializer_deserializer import SerializerDeserializer
-from ..id_generator import IdGenerator
-from ...bean import GitObject
+from pigit.id_generator.id_generator import IdGenerator
+from pigit.dal.serializer_deserializer import SerializerDeserializer
+from pigit.bean import GitObject
 
 
 class SerializerBasedIdGenerator(IdGenerator):

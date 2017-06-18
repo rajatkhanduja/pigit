@@ -1,8 +1,9 @@
-from .bean import GitObject
-from .bean.enum import SpecialReference
-from .configuration_provider import ConfigurationProvider
-from .dal import ObjectStore, ReferenceStore, IdGenerator
-from .working_area import WorkingArea
+from pigit.bean import GitObject
+from pigit.bean.enum import SpecialReference
+from pigit.configuration_provider import ConfigurationProvider
+from pigit.dal import ObjectStore, ReferenceStore
+from pigit.id_generator import IdGenerator
+from pigit.working_area import WorkingArea
 
 
 class Repository:

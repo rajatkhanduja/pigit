@@ -1,9 +1,9 @@
 import zlib
 
 from pathlib import Path
-from .. import ObjectStore, SerializerDeserializer
-from ...bean import GitObject
-from ...exception import NotGitDirException, InvalidObjectNameException, DuplicateObjectException
+from pigit.dal import ObjectStore, SerializerDeserializer
+from pigit.bean import GitObject
+from pigit.exception import NotGitDirException, InvalidObjectNameException, DuplicateObjectException
 
 OBJECT_ID_PREFIX_LEN = 2
 

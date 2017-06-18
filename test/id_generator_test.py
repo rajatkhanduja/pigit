@@ -1,6 +1,7 @@
 from unittest import TestCase
 
-from pigit.dal.impl import SerializerBasedIdGenerator, DefaultSerializer
+from pigit.id_generator import SerializerBasedIdGenerator
+from pigit.dal import DefaultSerializer
 from pigit.bean import Blob
 from hashlib import sha1
 

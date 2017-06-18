@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from ..bean import GitObject, Commit
+from pigit.bean import GitObject
 
 
 class ObjectStore(metaclass=ABCMeta):

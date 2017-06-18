@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from ..bean import Tree
+from pigit.bean import Tree
 
 
 class WorkingArea(metaclass=ABCMeta):

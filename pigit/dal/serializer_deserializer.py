@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-from ..bean import GitObject
+from pigit.bean import GitObject
 
 
 class SerializerDeserializer(metaclass=ABCMeta):

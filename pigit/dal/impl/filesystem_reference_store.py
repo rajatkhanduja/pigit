@@ -1,9 +1,9 @@
 import os
 
-from ..reference_store import ReferenceStore
-from ...exception import NotGitDirException, NoSuchReferenceException
-from ...bean import Reference
-from ...bean.enum import SpecialReference
+from pigit.dal.reference_store import ReferenceStore
+from pigit.exception import NotGitDirException, NoSuchReferenceException
+from pigit.bean import Reference
+from pigit.bean.enum import SpecialReference
 
 
 class FileSystemReferenceStore(ReferenceStore):

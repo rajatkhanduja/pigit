@@ -5,7 +5,7 @@ import binascii
 
 from pigit.bean import GitObject, Commit, Tree, Blob, Signature, TreeEntry, Tag
 from pigit.bean.enum import GitObjectType
-from ..serializer_deserializer import SerializerDeserializer
+from pigit.dal.serializer_deserializer import SerializerDeserializer
 from abc import ABCMeta, abstractmethod
 
 ORD_VAL_OF_SPACE = ord(b' ')

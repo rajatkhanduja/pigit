@@ -52,7 +52,7 @@ class FileSystemDataStoreTest(TestCase):
 
     def test_store_object_succeeds(self):
         dummy_object_id = "some_object_id"
-        blob = Blob(dummy_object_id, "Some blob content")
+        blob = Blob(dummy_object_id, b"Some blob content")
         try:
             self.object_store.delete_object(dummy_object_id)
         except:

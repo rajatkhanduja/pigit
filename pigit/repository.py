@@ -1,3 +1,5 @@
+from typing import Generator
+
 from pigit.bean import GitObject, Tree, Commit
 from pigit.bean.enum import SpecialReference
 from pigit.configuration_provider import ConfigurationProvider
@@ -15,8 +17,17 @@ class Repository:
         self.working_area = working_area
         self.id_generator = id_generator
 
-    def log(self, params):
-        pass
+    def get_logs(self, *, last_commit=None) -> Generator[Commit, None, None]:
+        if last_commit is None:
+            last_commit = self.get_head().commit
+
+        # TODO: Make this part correctly traverse for merges and multiple parents scenario
+        commit = self.object_store.get_object(last_commit)  # type: Commit
+        while commit is not None:
+            yield commit
+            if commit.parents is None or len(commit.parents) == 0:
+                break
+            commit = self.object_store.get_object(commit.parents[0].id)
 
     def get_object(self, object_id) -> GitObject:
         return self.object_store.get_object(object_id)
@@ -27,8 +38,7 @@ class Repository:
     def checkout(self, branch):
         branch_reference = self.reference_store.get_branch(branch)
         commit = self.object_store.get_object(branch_reference.commit)  # type: Commit
-        snapshot = self.object_store.get_object(commit.tree.id)    # type: Tree
-        print(type(snapshot))
+        snapshot = self.object_store.get_object(commit.tree.id)  # type: Tree
         self.working_area.setup(snapshot)
 
     def get_branches(self, include_remote=False):

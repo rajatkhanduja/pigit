@@ -12,4 +12,7 @@ for branch in repo.get_branches(include_remote=True):
 HEAD_reference = repo.get_head()
 print("HEAD : {commit}".format(commit=HEAD_reference.commit))
 
+for commit in repo.get_logs():
+    print(commit)
+
 repo.checkout(branch='master')

@@ -1,5 +1,4 @@
 class TreeEntry(object):
-
     def __init__(self, mode, filename: str, object_id: str):
         self.mode = mode
         self.filename = filename

@@ -11,7 +11,7 @@ class ReferenceStore(metaclass=ABCMeta):
         :return: Reference
         """
         reference = self.resolve_special_ref(special_ref)
-        return self.get_reference(reference)
+        return self.get_reference_by_relative_path(reference)
 
     @abstractmethod
     def resolve_special_ref(self, special_ref: SpecialReference) -> str:
@@ -21,6 +21,10 @@ class ReferenceStore(metaclass=ABCMeta):
         :raises: NoSuchSpecialReferenceException
         :return: str
         """
+        pass
+
+    @abstractmethod
+    def get_reference_by_relative_path(self, reference_path: str) -> Reference:
         pass
 
     @abstractmethod

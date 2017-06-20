@@ -1,1 +1,2 @@
 from .working_area import WorkingArea
+from .file_system_working_area import FileSystemWorkingArea

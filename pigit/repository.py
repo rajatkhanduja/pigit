@@ -1,4 +1,4 @@
-from pigit.bean import GitObject
+from pigit.bean import GitObject, Tree, Commit
 from pigit.bean.enum import SpecialReference
 from pigit.configuration_provider import ConfigurationProvider
 from pigit.dal import ObjectStore, ReferenceStore
@@ -25,7 +25,14 @@ class Repository:
         return self.reference_store.get_special_ref(SpecialReference.HEAD)
 
     def checkout(self, branch):
-        pass
+        branch_reference = self.reference_store.get_branch(branch)
+        commit = self.object_store.get_object(branch_reference.commit)  # type: Commit
+        snapshot = self.object_store.get_object(commit.tree.id)    # type: Tree
+        print(type(snapshot))
+        self.working_area.setup(snapshot)
+
+    def get_branches(self, include_remote=False):
+        return self.reference_store.get_all_branches(include_remote=include_remote)
 
     def stage_chunk(self, chunk):
         # TODO: Yet to figure out the details of this

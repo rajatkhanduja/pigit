@@ -1,3 +1,5 @@
+# This file demonstrates how `pigit` can be used
+
 from pigit import RepositoryFactory
 
 

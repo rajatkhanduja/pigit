@@ -11,7 +11,7 @@ from .working_area import WorkingArea
 
 
 class FileSystemWorkingArea(WorkingArea):
-    def __init__(self, object_store: ObjectStore, setup_dir):
+    def __init__(self, object_store: ObjectStore, setup_dir: str):
         self.object_store = object_store
         self.dir = Path(setup_dir)
 

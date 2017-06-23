@@ -47,3 +47,20 @@ class Repository:
     def stage_chunk(self, chunk):
         # TODO: Yet to figure out the details of this
         pass
+
+    @property
+    def head(self):
+        return self.get_head()
+
+    @property
+    def log(self):
+        return self.get_logs()
+
+    @property
+    def branches(self):
+        return self.get_branches(include_remote=True)
+
+    def create_branch(self, branch_name: str):
+        pass
+
+

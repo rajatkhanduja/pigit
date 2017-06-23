@@ -4,7 +4,6 @@ from pigit.serializer import DefaultSerializer
 from pigit.working_area import FileSystemWorkingArea
 
 from .repository import Repository
-from .pigit_command_wrapper import PigitCommandWrapper
 from .exception import *
 
 from pigit.dal import FileSystemReferenceStore, FileSystemObjectStore
@@ -33,3 +32,15 @@ class Pigit(object):
         working_area = FileSystemWorkingArea(object_store, working_dir)
         configuration_provider = None
         return Repository(object_store, reference_store, working_area, configuration_provider, id_generator)
+
+
+class PigitCommandWrapper:
+    def __init__(self, directory: str):
+        self.dir = directory
+        self.repository = Pigit.get_repository_from_working_dir(directory)
+
+    def execute_command(self, command_params):
+        try:
+            print(self.repository.get_object(command_params[1]))
+        except PigitException as e:
+            print(e.message)

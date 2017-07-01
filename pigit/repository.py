@@ -48,6 +48,9 @@ class Repository:
         # TODO: Yet to figure out the details of this
         pass
 
+    def get_index(self):
+        return self.reference_store.get_index()
+
     @property
     def head(self):
         return self.get_head()
@@ -59,6 +62,10 @@ class Repository:
     @property
     def branches(self):
         return self.get_branches(include_remote=True)
+
+    @property
+    def index(self):
+        return self.get_index()
 
     def create_branch(self, branch_name: str):
         pass

@@ -4,7 +4,7 @@ from pathlib import Path
 from pigit.store import ObjectStore
 from pigit.serializer import Serializer
 from pigit.bean import GitObject
-from pigit.exception import InvalidObjectNameException, DuplicateObjectException, ObjectDirDoesNotExist
+from pigit.exception import InvalidObjectNameException, DuplicateObjectException, ObjectDirDoesNotExistException
 
 OBJECT_ID_PREFIX_LEN = 2
 
@@ -21,7 +21,7 @@ class FileSystemObjectStore(ObjectStore):
 
         if not initialize:
             if not self.objects_dir.exists():
-                raise ObjectDirDoesNotExist(self.objects_dir)
+                raise ObjectDirDoesNotExistException(self.objects_dir)
         else:
             self.objects_dir.mkdir(exist_ok=True, parents=True)
 

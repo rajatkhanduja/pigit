@@ -39,7 +39,24 @@ class NoSuchBranchException(PigitException):
         self.branch = branch
 
 
-class ObjectDirDoesNotExist(PigitException):
+class ObjectDirDoesNotExistException(PigitException):
     def __init__(self, dir):
         super().__init__(7, "Object directory {dir} not found".format(dir=dir))
         self.dir = dir
+
+
+class IndexNotFoundException(PigitException):
+    def __init__(self):
+        super().__init__(8, "Index not found or does not exist")
+
+
+class IndexCorruptedException(PigitException):
+    def __init__(self, code=9, message="Index is corrupted"):
+        super().__init__(code, message)
+
+
+class IndexChecksumDoesNotMatchException(IndexCorruptedException):
+    def __init__(self, expected, calculated):
+        super(PigitException).__init__(10, "Index checksum does not match")
+        self.expected = expected
+        self.calculated = calculated

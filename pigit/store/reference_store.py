@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from pigit.bean import Reference
+from pigit.bean import Reference, Index
 from pigit.bean.enum import SpecialReference
 
 
@@ -72,3 +72,13 @@ class ReferenceStore(metaclass=ABCMeta):
         :return: [Reference]
         """
         pass
+
+    @abstractmethod
+    def get_index(self) -> Index:
+        """
+        Method to get Index object. 
+        :return: Index
+        :raises: IndexCorruptedException, IndexNotFoundException
+        """
+        pass
+

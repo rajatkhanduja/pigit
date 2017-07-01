@@ -1,15 +1,46 @@
-import os
+import hashlib
+import struct
 from pathlib import Path
-from typing import Generator
+from typing import Generator, List
+
+import binascii
 
 from pigit.store.reference_store import ReferenceStore
-from pigit.exception import NotGitDirException, NoSuchReferenceException
-from pigit.bean import Reference
+from pigit.exception import NoSuchReferenceException, IndexNotFoundException, IndexCorruptedException, \
+    IndexChecksumDoesNotMatchException
+from pigit.bean import Reference, Index, IndexEntry
 from pigit.bean.enum import SpecialReference
+
+INDEX_ENTRY_BYTES = 62
+
+
+def get_index_entries(entry_data: bytes, num_entries):
+    start = 0
+
+    def get_index_entry_data_chunks(entry_data: bytes, num_entries: int) -> Generator[bytes, None, None]:
+        nonlocal start
+
+        while start + INDEX_ENTRY_BYTES < len(entry_data) and num_entries > 0:
+            end = entry_data.index(b'\x00', start + INDEX_ENTRY_BYTES)
+            yield entry_data[start: end]
+            num_entries -= 1
+            start += (((end - start) + 8) // 8) * 8
+
+    def get_index_entry(entry_data_chunk):
+        ctime_s, ctime_n, mtime_s, mtime_n, dev, ino, mode, uid, gid, size, sha1, flags = \
+            struct.unpack('!LLLLLLLLLL20sH', entry_data_chunk[:INDEX_ENTRY_BYTES])
+
+        sha1 = binascii.hexlify(sha1).decode()
+        path = entry_data_chunk[INDEX_ENTRY_BYTES:].decode()
+
+        return IndexEntry(ctime_s, ctime_n, mtime_s, mtime_n, dev, ino, mode, uid, gid, size, sha1, flags, path)
+
+    return [get_index_entry(entry_data_chunk) for entry_data_chunk in
+            get_index_entry_data_chunks(entry_data, num_entries)], start
 
 
 class FileSystemReferenceStore(ReferenceStore):
-    def __init__(self, git_dir: Path, refs_sub_directory: str = 'refs', local_branches_sub_dir='heads',
+    def __init__(self, git_dir: Path, *, refs_sub_directory: str = 'refs', local_branches_sub_dir='heads',
                  remote_branches_sub_dir='remotes'):
 
         self.git_dir = git_dir
@@ -22,6 +53,8 @@ class FileSystemReferenceStore(ReferenceStore):
 
         self.remote_branches_sub_dir = self.ref_dir / remote_branches_sub_dir
         self.remote_branches_sub_dir.mkdir(exist_ok=True)
+
+        self.index_file = self.git_dir / 'index'
 
     def get_all_branches(self, include_remote=False) -> Generator[Reference, None, None]:
         for path in self.local_branches_dir.glob("*"):  # type: Path
@@ -74,3 +107,35 @@ class FileSystemReferenceStore(ReferenceStore):
             raise NoSuchReferenceException(reference_path)
         commit_id = reference_file.open().read().strip()
         return Reference(reference_path, commit_id)
+
+    def get_index(self) -> Index:
+        # Inspired from http://benhoyt.com/writings/pygit/
+        #
+        # Technical documentation at
+        # https://github.com/git/git/blob/867b1c1bf68363bcfd17667d6d4b9031fa6a1300/Documentation/technical/index-format.txt#L38
+
+        try:
+            with self.index_file.open('rb') as fp:
+                index_content = fp.read()
+        except FileNotFoundError:
+            raise IndexNotFoundException
+        except IOError:
+            raise IndexCorruptedException
+
+        digest = hashlib.sha1(index_content[:-20]).digest()
+        if digest != index_content[-20:]:
+            raise IndexChecksumDoesNotMatchException(index_content[-20:], digest)
+
+        try:
+            signature, version, num_entries = struct.unpack('!4sLL', index_content[:12])
+            index = Index(signature, version)
+
+            entry_data = index_content[12:-20]
+            index.index_entries, content_idx = get_index_entries(entry_data, num_entries)
+            if content_idx < len(entry_data):
+                # TODO: Parse for extensions
+                pass
+
+            return index
+        except:
+            raise IndexCorruptedException

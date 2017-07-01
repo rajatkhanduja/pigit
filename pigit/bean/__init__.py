@@ -6,3 +6,4 @@ from .tag import Tag
 from .signature import Signature
 from .reference import Reference
 from .tree_entry import TreeEntry
+from .index import IndexEntry, Index

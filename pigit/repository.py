@@ -3,7 +3,7 @@ from typing import Generator
 from pigit.bean import GitObject, Tree, Commit
 from pigit.bean.enum import SpecialReference
 from pigit.configuration_provider import ConfigurationProvider
-from pigit.dal import ObjectStore, ReferenceStore
+from pigit.store import ObjectStore, ReferenceStore
 from pigit.id_generator import IdGenerator
 from pigit.working_area import WorkingArea
 

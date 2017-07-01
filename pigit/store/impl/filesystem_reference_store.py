@@ -2,13 +2,27 @@ import os
 from pathlib import Path
 from typing import Generator
 
-from pigit.dal.reference_store import ReferenceStore
+from pigit.store.reference_store import ReferenceStore
 from pigit.exception import NotGitDirException, NoSuchReferenceException
 from pigit.bean import Reference
 from pigit.bean.enum import SpecialReference
 
 
 class FileSystemReferenceStore(ReferenceStore):
+    def __init__(self, git_dir: Path, refs_sub_directory: str = 'refs', local_branches_sub_dir='heads',
+                 remote_branches_sub_dir='remotes'):
+
+        self.git_dir = git_dir
+
+        self.ref_dir = self.git_dir / refs_sub_directory
+        self.ref_dir.mkdir(exist_ok=True)
+
+        self.local_branches_dir = self.ref_dir / local_branches_sub_dir
+        self.local_branches_dir.mkdir(exist_ok=True)
+
+        self.remote_branches_sub_dir = self.ref_dir / remote_branches_sub_dir
+        self.remote_branches_sub_dir.mkdir(exist_ok=True)
+
     def get_all_branches(self, include_remote=False) -> Generator[Reference, None, None]:
         for path in self.local_branches_dir.glob("*"):  # type: Path
             commit_id = path.open().read().strip()
@@ -31,23 +45,6 @@ class FileSystemReferenceStore(ReferenceStore):
 
     def remove_branch(self, branch_name: str):
         pass
-
-    def __init__(self, working_dir, git_sub_directory: str = '.git', refs_sub_directory: str = 'refs',
-                 local_branches_sub_dir='heads', remote_branches_sub_dir='remotes'):
-
-        self.working_dir = working_dir
-        self.git_dir = Path(working_dir) / git_sub_directory
-        if not self.git_dir.is_dir():
-            raise NotGitDirException(working_dir)
-
-        self.ref_dir = self.git_dir / refs_sub_directory
-        self.ref_dir.mkdir(exist_ok=True)
-
-        self.local_branches_dir = self.ref_dir / local_branches_sub_dir
-        self.local_branches_dir.mkdir(exist_ok=True)
-
-        self.remote_branches_sub_dir = self.ref_dir / remote_branches_sub_dir
-        self.remote_branches_sub_dir.mkdir(exist_ok=True)
 
     def resolve_special_ref(self, special_ref: SpecialReference) -> str:
         file_path = self.git_dir / special_ref.value

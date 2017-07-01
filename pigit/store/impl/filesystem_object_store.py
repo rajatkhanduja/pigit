@@ -1,10 +1,10 @@
 import zlib
 
 from pathlib import Path
-from pigit.dal import ObjectStore
+from pigit.store import ObjectStore
 from pigit.serializer import Serializer
 from pigit.bean import GitObject
-from pigit.exception import NotGitDirException, InvalidObjectNameException, DuplicateObjectException
+from pigit.exception import InvalidObjectNameException, DuplicateObjectException, ObjectDirDoesNotExist
 
 OBJECT_ID_PREFIX_LEN = 2
 
@@ -15,15 +15,15 @@ def get_file_contents(file: Path):
 
 
 class FileSystemObjectStore(ObjectStore):
-    def __init__(self, working_dir, serializer: Serializer, git_sub_directory: str = '.git'):
-        self.working_dir = Path(working_dir)  # type: Path
-        self.git_dir = self.working_dir / git_sub_directory  # type: Path
+    def __init__(self, serializer: Serializer, objects_dir: Path, initialize=False):
         self.serializer = serializer  # type: Serializer
-        if not self.git_dir.is_dir():
-            raise NotGitDirException(working_dir)
-        self.objects_dir = self.git_dir / 'objects'
+        self.objects_dir = objects_dir
 
-        self.objects_dir.mkdir(exist_ok=True)
+        if not initialize:
+            if not self.objects_dir.exists():
+                raise ObjectDirDoesNotExist(self.objects_dir)
+        else:
+            self.objects_dir.mkdir(exist_ok=True, parents=True)
 
     def _get_obj_dir(self, object_id: str, make_dir: bool = False) -> Path:
         if len(object_id) <= 2:

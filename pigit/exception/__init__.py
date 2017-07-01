@@ -37,3 +37,9 @@ class NoSuchBranchException(PigitException):
     def __init__(self, branch: str):
         super().__init__(6, "No such branch")
         self.branch = branch
+
+
+class ObjectDirDoesNotExist(PigitException):
+    def __init__(self, dir):
+        super().__init__(7, "Object directory {dir} not found".format(dir=dir))
+        self.dir = dir

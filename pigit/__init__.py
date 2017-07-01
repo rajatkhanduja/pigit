@@ -1,4 +1,7 @@
-from pigit.dal import FileSystemObjectStore, FileSystemReferenceStore
+from pathlib import Path
+
+from pigit.configuration_provider import FileSystemConfigurationProvider
+from pigit.store import FileSystemObjectStore, FileSystemReferenceStore
 from pigit.id_generator import SerializerBasedIdGenerator
 from pigit.serializer import DefaultSerializer
 from pigit.working_area import FileSystemWorkingArea
@@ -6,7 +9,7 @@ from pigit.working_area import FileSystemWorkingArea
 from .repository import Repository
 from .exception import *
 
-from pigit.dal import FileSystemReferenceStore, FileSystemObjectStore
+from pigit.store import FileSystemReferenceStore, FileSystemObjectStore
 from pigit.working_area import FileSystemWorkingArea
 from pigit.serializer import DefaultSerializer
 from pigit.id_generator import SerializerBasedIdGenerator
@@ -20,27 +23,18 @@ class Pigit(object):
         pass
 
     @staticmethod
-    def get_repository_from_working_dir(working_dir: str) -> Repository:
-        return Pigit.get_file_system_repository_from_directories(working_dir, working_dir)
+    def repo(working_dir: str, bare=False) -> Repository:
+        working_dir_path = Path(working_dir)
+        return Pigit.get_file_system_repository_from_directories(working_dir_path / '.git', working_dir_path, bare)
 
     @staticmethod
-    def get_file_system_repository_from_directories(git_parent_dir: str, working_dir: str):
+    def get_file_system_repository_from_directories(git_dir: Path, working_dir: Path, bare=False):
         serializer = DefaultSerializer()
         id_generator = SerializerBasedIdGenerator(serializer, sha1)
-        object_store = FileSystemObjectStore(git_parent_dir, serializer=serializer)
-        reference_store = FileSystemReferenceStore(git_parent_dir)
+        configuration_provider = FileSystemConfigurationProvider(git_dir=git_dir)
+        object_store = FileSystemObjectStore(objects_dir=configuration_provider.GIT_OBJECT_DIRECTORY,
+                                             serializer=serializer)
+        reference_store = FileSystemReferenceStore(configuration_provider.GIT_DIR)
         working_area = FileSystemWorkingArea(object_store, working_dir)
-        configuration_provider = None
         return Repository(object_store, reference_store, working_area, configuration_provider, id_generator)
 
-
-class PigitCommandWrapper:
-    def __init__(self, directory: str):
-        self.dir = directory
-        self.repository = Pigit.get_repository_from_working_dir(directory)
-
-    def execute_command(self, command_params):
-        try:
-            print(self.repository.get_object(command_params[1]))
-        except PigitException as e:
-            print(e.message)

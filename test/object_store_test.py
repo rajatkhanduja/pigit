@@ -1,7 +1,9 @@
 import os
 from unittest import TestCase
 
-from pigit.dal.impl import FileSystemObjectStore
+from pathlib import Path
+
+from pigit.store.impl import FileSystemObjectStore
 from pigit.bean import *
 from pigit.serializer import Serializer
 from pigit.exception import InvalidObjectNameException, DuplicateObjectException
@@ -22,10 +24,9 @@ class DummySerializer(Serializer):
 class FileSystemDataStoreTest(TestCase):
     def setUp(self):
         test_working_dir = os.path.join(os.path.dirname(__file__), 'test_files', 'test_working_dir')
-        test_git_sub_dir = os.path.join(test_working_dir, '.git_test')
+        objects_dir = Path(test_working_dir) / '.git_test' / 'objects'
 
-        self.object_store = FileSystemObjectStore(working_dir=test_working_dir, git_sub_directory=test_git_sub_dir,
-                                                  serializer=DummySerializer())
+        self.object_store = FileSystemObjectStore(objects_dir=objects_dir, serializer=DummySerializer())
         self.existing_object_ids = ['97d3f98f52b5779598424c552428d24c020703b5',
                                     '97cdcfc76e3245f92f6a71094a49bb4af225c367',
                                     '97cd0b35de837bab6f46140e4accc761cd287478']

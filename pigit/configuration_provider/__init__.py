@@ -1,1 +1,2 @@
 from .configuration_provider import ConfigurationProvider
+from .file_system_configuration_provider import FileSystemConfigurationProvider

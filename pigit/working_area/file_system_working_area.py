@@ -4,16 +4,16 @@ from pathlib import Path
 from typing import Union
 from tempfile import TemporaryDirectory
 
-from pigit.dal import ObjectStore
+from pigit.store import ObjectStore
 from pigit.bean import Tree, TreeEntry, Blob
 
 from .working_area import WorkingArea
 
 
 class FileSystemWorkingArea(WorkingArea):
-    def __init__(self, object_store: ObjectStore, setup_dir: str):
+    def __init__(self, object_store: ObjectStore, setup_dir: Path):
         self.object_store = object_store
-        self.dir = Path(setup_dir)
+        self.dir = setup_dir
 
     def setup(self, snapshot: Tree):
         tmp_dir = TemporaryDirectory()

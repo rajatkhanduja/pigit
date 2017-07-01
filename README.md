@@ -38,7 +38,7 @@ repo = Pigit.clone('https://github.com/rajatkhanduja/pigit.git', '/tmp/pigit')
 
 - Basic Operations with repository
 
-```pythonstub
+```python
 # all examples below assume you already have a `repo` instance
 
 # Get Logs

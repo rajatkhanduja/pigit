@@ -42,7 +42,7 @@ repo = Pigit.clone('https://github.com/rajatkhanduja/pigit.git', '/tmp/pigit')
 # all examples below assume you already have a `repo` instance
 
 # Get Logs
-for commit in repo.logs:
+for commit in repo.log:
     print(commit.id)
 
 # Get all branches

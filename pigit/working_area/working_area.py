@@ -1,8 +1,18 @@
 from abc import ABCMeta, abstractmethod
+from typing import Generator
+
 from pigit.bean import Tree
 
 
 class WorkingArea(metaclass=ABCMeta):
     @abstractmethod
     def setup(self, snapshot: Tree):
+        pass
+
+    @abstractmethod
+    def get_files(self) -> Generator[str, None, None]:
+        pass
+
+    @abstractmethod
+    def get_file_content(self, filename):
         pass

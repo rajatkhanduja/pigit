@@ -1,11 +1,13 @@
+from pathlib import Path
 from typing import Generator
 
-from pigit.bean import GitObject, Tree, Commit
+from pigit.bean import GitObject, Tree, Commit, IndexEntry, Blob
 from pigit.bean.enum import SpecialReference
 from pigit.configuration_provider import ConfigurationProvider
 from pigit.store import ObjectStore, ReferenceStore
 from pigit.id_generator import IdGenerator
 from pigit.working_area import WorkingArea
+from pigit.exception import IndexNotFoundException
 
 
 class Repository:
@@ -70,4 +72,28 @@ class Repository:
     def create_branch(self, branch_name: str):
         pass
 
+    def has_changed(self, entry: IndexEntry):
+        blob = Blob(None, self.working_area.get_file_content(entry.path))
+        return self.id_generator.generate_id(blob) != entry.sha1
+
+    def get_status(self):
+        index = self.index
+
+        changed = set()
+        created = set()
+
+        index_entries_by_path = {entry.path: entry for entry in index.entries}
+
+        files_in_working_area = set(self.working_area.get_files())
+        for file in files_in_working_area:
+            if file not in index_entries_by_path:
+                created.add(file)
+            else:
+                entry = index_entries_by_path[file]     # type: IndexEntry
+                if self.has_changed(entry):
+                    changed.add(file)
+
+        deleted = set(file for file in index_entries_by_path if file not in files_in_working_area)
+
+        return changed, created, deleted
 

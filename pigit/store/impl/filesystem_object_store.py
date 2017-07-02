@@ -3,7 +3,7 @@ import zlib
 from pathlib import Path
 from pigit.store import ObjectStore
 from pigit.serializer import Serializer
-from pigit.bean import GitObject
+from pigit.bean import GitObject, Blob
 from pigit.exception import InvalidObjectNameException, DuplicateObjectException, ObjectDirDoesNotExistException
 
 OBJECT_ID_PREFIX_LEN = 2
@@ -24,22 +24,6 @@ class FileSystemObjectStore(ObjectStore):
                 raise ObjectDirDoesNotExistException(self.objects_dir)
         else:
             self.objects_dir.mkdir(exist_ok=True, parents=True)
-
-    def _get_obj_dir(self, object_id: str, make_dir: bool = False) -> Path:
-        if len(object_id) <= 2:
-            raise InvalidObjectNameException(object_id)
-
-        object_dir = self.objects_dir / object_id[:OBJECT_ID_PREFIX_LEN]
-        if not object_dir.is_dir():
-            if make_dir:
-                object_dir.mkdir(parents=True, exist_ok=True)
-            else:
-                raise InvalidObjectNameException(object_id)
-        return object_dir
-
-    def _get_obj_file_path(self, object_id: str, make_dir: bool = False) -> Path:
-        object_dir = self._get_obj_dir(object_id, make_dir)
-        return object_dir / object_id[OBJECT_ID_PREFIX_LEN:]
 
     def get_object(self, object_id: str, lazy_load=True) -> GitObject:
         pattern_result = list(self._get_obj_dir(object_id).glob(object_id[OBJECT_ID_PREFIX_LEN:] + "*"))
@@ -69,4 +53,20 @@ class FileSystemObjectStore(ObjectStore):
 
     def delete_object(self, object_id):
         self._get_obj_file_path(object_id).unlink()
+
+    def _get_obj_dir(self, object_id: str, make_dir: bool = False) -> Path:
+        if len(object_id) <= 2:
+            raise InvalidObjectNameException(object_id)
+
+        object_dir = self.objects_dir / object_id[:OBJECT_ID_PREFIX_LEN]
+        if not object_dir.is_dir():
+            if make_dir:
+                object_dir.mkdir(parents=True, exist_ok=True)
+            else:
+                raise InvalidObjectNameException(object_id)
+        return object_dir
+
+    def _get_obj_file_path(self, object_id: str, make_dir: bool = False) -> Path:
+        object_dir = self._get_obj_dir(object_id, make_dir)
+        return object_dir / object_id[OBJECT_ID_PREFIX_LEN:]
 

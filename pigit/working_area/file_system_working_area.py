@@ -11,9 +11,10 @@ from .working_area import WorkingArea
 
 
 class FileSystemWorkingArea(WorkingArea):
-    def __init__(self, object_store: ObjectStore, setup_dir: Path):
+    def __init__(self, object_store: ObjectStore, setup_dir: Path, git_dir: Path):
         self.object_store = object_store
         self.dir = setup_dir
+        self.git_dir = git_dir
 
     def setup(self, snapshot: Tree):
         tmp_dir = TemporaryDirectory()
@@ -26,11 +27,20 @@ class FileSystemWorkingArea(WorkingArea):
         finally:
             tmp_dir.cleanup()
 
+    def get_files(self):
+        for p in self.dir.rglob("*"): # type: Path
+            if self.git_dir not in p.parents:
+                yield str(p)
+
+    def get_file_content(self, filename):
+        with open(filename, 'rb') as fp:
+            return fp.read()
+
     def _setup(self, snapshot: Tree, path: Path):
         path.mkdir(exist_ok=True)
 
         for entry in snapshot.entries:  # type: TreeEntry
-            git_object = self.object_store.get_object(entry.object_id)  #type: Union[Tree, Blob]
+            git_object = self.object_store.get_object(entry.object_id)  # type: Union[Tree, Blob]
 
             if type(git_object) == Blob:
                 file_path = path / entry.filename

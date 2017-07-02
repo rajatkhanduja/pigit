@@ -23,18 +23,18 @@ class Pigit(object):
         pass
 
     @staticmethod
-    def repo(working_dir: str, bare=False) -> Repository:
+    def repo(working_dir: str) -> Repository:
         working_dir_path = Path(working_dir)
-        return Pigit.get_file_system_repository_from_directories(working_dir_path / '.git', working_dir_path, bare)
+        return Pigit.get_file_system_repository_from_directories(working_dir_path / '.git', working_dir_path)
 
     @staticmethod
-    def get_file_system_repository_from_directories(git_dir: Path, working_dir: Path, bare=False):
+    def get_file_system_repository_from_directories(git_dir: Path, working_dir: Path):
         serializer = DefaultSerializer()
         id_generator = SerializerBasedIdGenerator(serializer, sha1)
         configuration_provider = FileSystemConfigurationProvider(git_dir=git_dir)
         object_store = FileSystemObjectStore(objects_dir=configuration_provider.GIT_OBJECT_DIRECTORY,
                                              serializer=serializer)
         reference_store = FileSystemReferenceStore(configuration_provider.GIT_DIR)
-        working_area = FileSystemWorkingArea(object_store, working_dir)
+        working_area = FileSystemWorkingArea(object_store, working_dir, configuration_provider.GIT_DIR)
         return Repository(object_store, reference_store, working_area, configuration_provider, id_generator)
 

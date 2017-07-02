@@ -131,7 +131,7 @@ class FileSystemReferenceStore(ReferenceStore):
             index = Index(signature, version)
 
             entry_data = index_content[12:-20]
-            index.index_entries, content_idx = get_index_entries(entry_data, num_entries)
+            index.entries, content_idx = get_index_entries(entry_data, num_entries)
             if content_idx < len(entry_data):
                 # TODO: Parse for extensions
                 pass

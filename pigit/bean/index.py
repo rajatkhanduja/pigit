@@ -31,10 +31,10 @@ class Index(object):
     def __init__(self, signature: str, version: int):
         self.signature = signature
         self.version = version
-        self.index_entries = []
+        self.entries = []
 
     def add_index_entry(self, entry: IndexEntry):
-        self.index_entries.append(entry)
+        self.entries.append(entry)
 
     def __repr__(self):
         return repr(self.__dict__)

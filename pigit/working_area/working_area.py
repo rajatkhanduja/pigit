@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from typing import Generator
+from pathlib import Path
 
 from pigit.bean import Tree
 
@@ -10,7 +11,7 @@ class WorkingArea(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_files(self) -> Generator[str, None, None]:
+    def get_files(self) -> Generator[Path, None, None]:
         pass
 
     @abstractmethod

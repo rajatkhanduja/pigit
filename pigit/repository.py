@@ -85,15 +85,18 @@ class Repository:
         index_entries_by_path = {entry.path: entry for entry in index.entries}
 
         files_in_working_area = set(self.working_area.get_files())
-        for file in files_in_working_area:
-            if file not in index_entries_by_path:
+        for file in files_in_working_area:  # type: Path
+            file_path_str = str(file)
+            if file.is_dir():
+                continue
+            if file_path_str not in index_entries_by_path:
                 created.add(file)
             else:
-                entry = index_entries_by_path[file]     # type: IndexEntry
+                entry = index_entries_by_path[file_path_str]     # type: IndexEntry
                 if self.has_changed(entry):
-                    changed.add(file)
+                    changed.add(file_path_str)
 
-        deleted = set(file for file in index_entries_by_path if file not in files_in_working_area)
+        deleted = set(file for file in index_entries_by_path if Path(file) not in files_in_working_area)
 
         return changed, created, deleted
 

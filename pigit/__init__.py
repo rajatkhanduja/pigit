@@ -35,6 +35,6 @@ class Pigit(object):
         object_store = FileSystemObjectStore(objects_dir=configuration_provider.GIT_OBJECT_DIRECTORY,
                                              serializer=serializer)
         reference_store = FileSystemReferenceStore(configuration_provider.GIT_DIR)
-        working_area = FileSystemWorkingArea(object_store, working_dir, configuration_provider.GIT_DIR)
+        working_area = FileSystemWorkingArea(object_store, working_dir, configuration_provider.GIT_DIR, configuration_provider.get_gitignore_rules())
         return Repository(object_store, reference_store, working_area, configuration_provider, id_generator)
 

@@ -82,3 +82,14 @@ class ReferenceStore(metaclass=ABCMeta):
         """
         pass
 
+
+    @abstractmethod
+    def get_branch_name(self, reference: Reference, local=True) -> str:
+        """
+        Method to get branch name from the reference name. For instance '/refs/heads/master' resolves to 'master'
+        and '/refs/remotes/origin/master' resovles to '/remotes/origin/master'
+        :param reference: 
+        :param local: 
+        :return: 
+        """
+        pass

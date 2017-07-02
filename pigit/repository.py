@@ -1,13 +1,15 @@
+from collections import namedtuple
 from pathlib import Path
-from typing import Generator
+from typing import Generator, Tuple, Set
 
-from pigit.bean import GitObject, Tree, Commit, IndexEntry, Blob
+
+from pigit.bean import GitObject, Tree, Commit, IndexEntry, Blob, RepositoryStatus
 from pigit.bean.enum import SpecialReference
 from pigit.configuration_provider import ConfigurationProvider
 from pigit.store import ObjectStore, ReferenceStore
 from pigit.id_generator import IdGenerator
 from pigit.working_area import WorkingArea
-from pigit.exception import IndexNotFoundException
+
 
 
 class Repository:
@@ -76,7 +78,10 @@ class Repository:
         blob = Blob(None, self.working_area.get_file_content(entry.path))
         return self.id_generator.generate_id(blob) != entry.sha1
 
-    def get_status(self):
+    def get_status(self) -> RepositoryStatus:
+        """
+        Returns list of a tuple of (changed, created, deleted) filenames
+        """
         index = self.index
 
         changed = set()
@@ -87,8 +92,6 @@ class Repository:
         files_in_working_area = set(self.working_area.get_files())
         for file in files_in_working_area:  # type: Path
             file_path_str = str(file)
-            if file.is_dir():
-                continue
             if file_path_str not in index_entries_by_path:
                 created.add(file)
             else:
@@ -97,6 +100,7 @@ class Repository:
                     changed.add(file_path_str)
 
         deleted = set(file for file in index_entries_by_path if Path(file) not in files_in_working_area)
+        current_branch = self.reference_store.get_branch_name(self.head)
+        return RepositoryStatus(branch_name=current_branch, changed=changed, created=created, deleted=deleted)
 
-        return changed, created, deleted
 

@@ -31,6 +31,8 @@ class FileSystemWorkingArea(WorkingArea):
     def get_files(self):
         ignored_files = self.get_ignored_files()
         for p in self.dir.rglob("*"): # type: Path
+            if p.is_dir():
+                continue
             if not self.to_be_ignored(p, ignored_files):
                 yield p
 
@@ -59,7 +61,7 @@ class FileSystemWorkingArea(WorkingArea):
                 self._setup(git_object, path / entry.filename)
 
     def to_be_ignored(self, path: Path, ignored_files: Set[Path]) -> bool:
-        # TODO: This is definitely not an optimal way to do this. 
+        # TODO: This is definitely not an optimal way to do this.
         assert isinstance(path, Path), f"{path} is not of the required type"
 
         if self.git_dir in path.parents or path in ignored_files:

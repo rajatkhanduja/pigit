@@ -7,7 +7,7 @@ import binascii
 
 from pigit.store.reference_store import ReferenceStore
 from pigit.exception import NoSuchReferenceException, IndexNotFoundException, IndexCorruptedException, \
-    IndexChecksumDoesNotMatchException
+    IndexChecksumDoesNotMatchException, BranchNameNotRecognizedException
 from pigit.bean import Reference, Index, IndexEntry
 from pigit.bean.enum import SpecialReference
 
@@ -139,3 +139,11 @@ class FileSystemReferenceStore(ReferenceStore):
             return index
         except:
             raise IndexCorruptedException
+
+    def get_branch_name(self, reference: Reference, local=True) -> str:
+        ref_name = reference.name
+        search_string = '/heads/' if local else '/remotes/'
+        try:
+            return ref_name[ref_name.index(search_string) + len(search_string):]
+        except (ValueError, IndexError):
+            raise BranchNameNotRecognizedException(ref_name)

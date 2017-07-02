@@ -57,6 +57,12 @@ class IndexCorruptedException(PigitException):
 
 class IndexChecksumDoesNotMatchException(IndexCorruptedException):
     def __init__(self, expected, calculated):
-        super(PigitException).__init__(10, "Index checksum does not match")
+        super().__init__(10, "Index checksum does not match")
         self.expected = expected
         self.calculated = calculated
+
+
+class BranchNameNotRecognizedException(PigitException):
+    def __init__(self, name: str):
+        super().__init__(11, "Could not recognize branch by name : " + name)
+        self.name = name

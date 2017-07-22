@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from unittest import TestCase
+from abc import ABCMeta, abstractmethod
 
 from datetime import datetime
 
@@ -10,12 +11,16 @@ from tempfile import TemporaryDirectory
 from pigit.bean import Signature
 
 
-class MemoryRepositoryTest(TestCase):
+class RepositoryTest(TestCase, metaclass=ABCMeta):
+    @abstractmethod
+    def get_repo(self):
+        pass
+
     def setUp(self):
         self.tmp_dir = TemporaryDirectory()
         self.tmp_dir_path = Path(self.tmp_dir.name)
-        self.repo = Pigit.get_memory_repository()
         os.chdir(self.tmp_dir.name)
+        self.repo = self.get_repo()
 
     def tearDown(self):
         super().tearDown()
@@ -39,17 +44,6 @@ class MemoryRepositoryTest(TestCase):
                              author=Signature('Rajat', 'rajatkhanduja13@gmail.com', timestamp, 330))
 
     def test_first_commit(self):
-        # dummy_file = "file2"
-        #
-        # with open(dummy_file, 'wb') as fp:
-        #     fp.write(b"Additional line")
-        #
-        # self.repo.add(dummy_file)
-        #
-        # self.assertEqual(len(self.repo.index.entries), 1)
-        # timestamp = int(datetime.now().timestamp())
-        # commit = self.repo.commit(message="First commit",
-        #                           author=Signature('Rajat', 'rajatkhanduja13@gmail.com', timestamp, 330))
         commit = self.make_first_commit()
         self.assertEqual(self.repo.head.commit, commit.id)
 
@@ -88,3 +82,8 @@ class MemoryRepositoryTest(TestCase):
 
         self.assertEqual(len(commit2.parents), 1)
         self.assertEqual(commit2.parents[0], commit)
+
+
+class MemoryRepositoryTest(RepositoryTest):
+    def get_repo(self):
+        return Pigit.get_memory_repository()

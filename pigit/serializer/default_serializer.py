@@ -138,7 +138,7 @@ class TreeSerializer(GitObjectSerializer):
     def serialize(self, tree: Tree):
         entries_data = b''
         for entry in tree.entries:
-            entries_data += (entry.mode + " " + entry.filename).encode() + b'\x00'
+            entries_data += (str(entry.mode) + " " + entry.filename).encode() + b'\x00'
             entries_data += binascii.unhexlify(entry.object_id)
         return entries_data
 

@@ -1,3 +1,6 @@
+from pigit.bean.enum import SpecialReference
+
+
 class PigitException(Exception):
     def __init__(self, code, message):
         self.code = code
@@ -66,3 +69,19 @@ class BranchNameNotRecognizedException(PigitException):
     def __init__(self, name: str):
         super().__init__(11, "Could not recognize branch by name : " + name)
         self.name = name
+
+
+class ReferenceAlreadyExistsException(PigitException):
+    def __init__(self, reference_name):
+        super().__init__(12, "Reference already exists in store : " + reference_name)
+        self.name = reference_name
+
+
+class SpecialReferenceNotSetException(PigitException):
+    def __init__(self, reference: SpecialReference):
+        super().__init__(13, f"{reference} is not set yet")
+
+
+class NothingToCommitException(PigitException):
+    def __init__(self):
+        super().__init__(14, "Nothing to commit")

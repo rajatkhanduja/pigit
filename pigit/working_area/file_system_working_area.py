@@ -34,7 +34,7 @@ class FileSystemWorkingArea(WorkingArea):
             if p.is_dir():
                 continue
             if not self.to_be_ignored(p, ignored_files):
-                yield p
+                yield p.relative_to(self.dir)
 
     def get_ignored_files(self):
         ignored_files = set()
@@ -43,8 +43,8 @@ class FileSystemWorkingArea(WorkingArea):
                 ignored_files.add(file)
         return ignored_files
 
-    def get_file_content(self, filename):
-        with open(filename, 'rb') as fp:
+    def get_file_content(self, filename: Path):
+        with open(self.dir / filename, 'rb') as fp:
             return fp.read()
 
     def _setup(self, snapshot: Tree, path: Path):

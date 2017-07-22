@@ -1,6 +1,8 @@
 import zlib
 
 from pathlib import Path
+from typing import Generator
+
 from pigit.store import ObjectStore
 from pigit.serializer import Serializer
 from pigit.bean import GitObject, Blob
@@ -66,7 +68,15 @@ class FileSystemObjectStore(ObjectStore):
                 raise InvalidObjectNameException(object_id)
         return object_dir
 
+    def get_all_objects(self) -> Generator[GitObject, None, None]:
+        for path in self.objects_dir.glob("*"):  # type: Path
+            if path.is_dir():
+                prefix = str(path.relative_to(self.objects_dir))
+
+                for p in path.rglob("*"):
+                    object_id = prefix + str(p)
+                    yield self.get_object(object_id)
+
     def _get_obj_file_path(self, object_id: str, make_dir: bool = False) -> Path:
         object_dir = self._get_obj_dir(object_id, make_dir)
         return object_dir / object_id[OBJECT_ID_PREFIX_LEN:]
-

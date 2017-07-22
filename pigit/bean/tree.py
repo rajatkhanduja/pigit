@@ -6,7 +6,7 @@ from .enum import GitObjectType
 
 
 class Tree(GitObject):
-    def __init__(self, object_id: Union[str, None], entries:[TreeEntry] = None):
+    def __init__(self, object_id: Union[str, None] = None, entries:[TreeEntry] = None):
         super().__init__(object_id, GitObjectType.TREE)
         if entries is None:
             entries = []

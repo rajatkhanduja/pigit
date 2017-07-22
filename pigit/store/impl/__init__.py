@@ -1,2 +1,4 @@
 from .filesystem_object_store import FileSystemObjectStore
 from .filesystem_reference_store import FileSystemReferenceStore
+from .memory_object_store import MemoryObjectStore
+from .memory_reference_store import MemoryReferenceStore

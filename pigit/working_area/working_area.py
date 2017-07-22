@@ -15,5 +15,11 @@ class WorkingArea(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_file_content(self, filename):
+    def get_file_content(self, filename) -> bytes:
+        """
+        Returns the content of the file
+        :param filename: 
+        :return:
+        :raises: FileNotFoundError 
+        """
         pass
